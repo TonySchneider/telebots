@@ -22,7 +22,7 @@ class RequestWrapper:
         self.status_code = None
 
     @retry(exceptions=(ConnectionResetError, ssl.SSLError, requests.exceptions.SSLError), tries=3, delay=2, jitter=2)
-    def perform_request(self, method: str, url: str, params: dict = None, headers: dict = None) -> Union[dict, None]:
+    def perform_request(self, url: str, method: str = 'GET', params: dict = None, headers: dict = None) -> Union[dict, None]:
         """
         This method responsible on all our requests in the project. each get/post request is being done here.
         This method covered with 'retry' decorator so each temporary error connection handled and the method

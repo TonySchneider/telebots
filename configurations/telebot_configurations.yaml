@@ -1,6 +1,9 @@
-safe_ashkelon_token:
-dev_env_chat_id:
-prod_env_chat_id:
+safe_ashkelon_token: 1762053321:AAH-C6g3wHVnECTg2L2UhX_B6beKCwdkYa4
+dev_env_chat_id: -1001216509728
+prod_env_chat_id: pass
 
-tony_english_token:
-english_chat_id:
+tony_english_token: 1109010718:AAG7RVwQy08ADM80XjVCDWArjsjj0G1oPcU
+english_chat_id: 239169883
+
+app_api_hash: a021d57f9c86537b92e48190f35e7e1f
+app_api_id: 1947293

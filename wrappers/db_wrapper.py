@@ -32,28 +32,19 @@ class DBWrapper:
           'auth_plugin': 'mysql_native_password'
         }
 
-    def create_connection(self) -> None:
-        try:
-            self.mysql_connector = MySQLConnection(**self._config)
-        except MySQLError as e:
-            logging.error(f"There was an issue with mysql connection - '{e}'")
-
-    def commit(self):
-        self.mysql_connector.commit()
-
     def close_connection(self) -> None:
         self.mysql_connector.close()
 
     def execute_command(self, command: str):
         output = True
-        self.create_connection()
         try:
+            self.mysql_connector = MySQLConnection(**self._config)
             self.mysql_cursor = self.mysql_connector.cursor(buffered=True, dictionary=True)
             self.mysql_cursor.execute(command)
             if 'SELECT' in command:
                 output = self.mysql_cursor.fetchall()
             self.mysql_connector.commit()
-            self.close_connection()
+            self.mysql_connector.close()
         except Exception as e:
             logging.error(f"There was an issue to execute {command}. Error - '{e}'")
             output = False
@@ -68,6 +59,16 @@ class DBWrapper:
 
     def update_field(self, table_name: str, field: str, value, condition_field: str, condition_value):
         update_field_command = f"UPDATE {table_name} SET {field} = '{value}' WHERE {condition_field}='{condition_value}'"
+
+        return self.execute_command(update_field_command)
+
+    def increment_field(self, table_name: str, field: str, condition_field: str, condition_value):
+        update_field_command = f"UPDATE {table_name} SET {field} = {field} + 1 WHERE {condition_field}='{condition_value}'"
+
+        return self.execute_command(update_field_command)
+
+    def decrement_field(self, table_name: str, field: str, condition_field: str, condition_value):
+        update_field_command = f"UPDATE {table_name} SET {field} = {field} - 1 WHERE {condition_field}='{condition_value}'"
 
         return self.execute_command(update_field_command)
 
@@ -87,7 +88,7 @@ class DBWrapper:
         if field:
             result = [item[field] for item in result]
 
-        return result[0] if len(result) == 1 else result
+        return result[0] if first_item else result
 
     def get_specific_field_value(self, table_name: str, field_to_get: str, field_condition: str, value_condition):
         get_specific_field_value_command = f"SELECT {field_to_get} FROM {table_name} WHERE {field_condition}='{value_condition}'"
