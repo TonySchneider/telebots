@@ -1,3 +1,4 @@
+import os
 import sys
 import time
 import random
@@ -6,18 +7,20 @@ import logging
 from threading import Thread
 from googletrans import Translator
 from wrappers.db_wrapper import DBWrapper
-from wrappers.config_wrapper import ConfigWrapper
 from wrappers.requets_wrapper import RequestWrapper
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)-10s | %(message)s', stream=sys.stdout)
-conf_obj = ConfigWrapper()
-telebot_conf = conf_obj.get_config_file('telebot_configurations')
-mysql_conf = conf_obj.get_config_file('mysql_configurations')
 
-db_obj = DBWrapper(host=mysql_conf['host'], mysql_user=mysql_conf['username'], mysql_pass=mysql_conf['password'], database='english_bot')
+try:
+    TOKEN = os.environ["TONY_ENGLISH_BOT_TOKEN"]
+    MYSQL_USER = os.environ["MYSQL_USER"]
+    MYSQL_PASS = os.environ["MYSQL_PASS"]
+except KeyError:
+    print("Please set the environment variables: MYSQL_USER, MYSQL_PASS, TONY_ENGLISH_BOT_TOKEN")
+    sys.exit(1)
 
-TOKEN = telebot_conf['tony_english_token']
+db_obj = DBWrapper(host='127.0.0.1', mysql_user=MYSQL_USER, mysql_pass=MYSQL_PASS, database='english_bot')
 bot = telebot.TeleBot(TOKEN)
 
 USERS = []
@@ -42,7 +45,8 @@ def show_menu(chat_id):
     }
 
     reply_markup = InlineKeyboardMarkup()
-    options = [InlineKeyboardButton(button_text, callback_data=f'menu:{button_id}') for button_id, button_text in menu_buttons.items()]
+    options = [InlineKeyboardButton(button_text, callback_data=f'menu:{button_id}') for button_id, button_text in
+               menu_buttons.items()]
 
     for option in options:
         reply_markup.row(option)
@@ -52,11 +56,13 @@ def show_menu(chat_id):
 
 
 def show_wordlist(chat_id):
-    en_words = list(set(db_obj.get_all_values_by_field(table_name='translations', condition_field='chat_id', condition_value=chat_id, field='en_word')))
+    en_words = list(set(db_obj.get_all_values_by_field(table_name='translations', condition_field='chat_id',
+                                                       condition_value=chat_id, field='en_word')))
     cross_icon = u"\u274c"
 
     words_buttons = [InlineKeyboardButton(en_word, callback_data=f'word:{en_word}') for en_word in en_words]
-    cross_icon_buttons = [InlineKeyboardButton(cross_icon, callback_data=f'delete_word:{en_word}') for en_word in en_words]
+    cross_icon_buttons = [InlineKeyboardButton(cross_icon, callback_data=f'delete_word:{en_word}') for en_word in
+                          en_words]
 
     reply_markup = InlineKeyboardMarkup()
 
@@ -82,16 +88,19 @@ def handle_query(call):
             callback_msg = send_message(chat_id, 'שלח את המילה החדשה')
             bot.register_next_step_handler(callback_msg, add_new_word_to_db)
         elif button_id == '2':
-            user_details = db_obj.get_all_values_by_field(table_name='users', condition_field='chat_id', condition_value=chat_id, first_item=True)
+            user_details = db_obj.get_all_values_by_field(table_name='users', condition_field='chat_id',
+                                                          condition_value=chat_id, first_item=True)
             current_value = eval(user_details['auto_send_active'])
             if not current_value:
                 if user_details['number_of_words'] >= 4:
-                    db_obj.update_field(table_name='users', field='auto_send_active', condition_field='chat_id', condition_value=chat_id, value=not current_value)
+                    db_obj.update_field(table_name='users', field='auto_send_active', condition_field='chat_id',
+                                        condition_value=chat_id, value=not current_value)
                     send_message(chat_id, 'שליחת המילים האוטומטית הופעלה')
                 else:
                     send_message(chat_id, 'לא הוספו 4 מילים')
             elif current_value:
-                db_obj.update_field(table_name='users', field='auto_send_active', condition_field='chat_id', condition_value=chat_id, value=not current_value)
+                db_obj.update_field(table_name='users', field='auto_send_active', condition_field='chat_id',
+                                    condition_value=chat_id, value=not current_value)
                 send_message(chat_id, 'שליחת המילים האוטומטית הופסקה')
         elif button_id == '3':
             lock_chat(chat_id)
@@ -146,11 +155,14 @@ def add_new_word_to_db(message):
     statuses = []
 
     for translation in translations:
-        statuses.append(db_obj.insert_row(table_name='translations', keys_values={'en_word': new_word, 'he_word': translation, 'chat_id': message.chat.id}))
+        statuses.append(db_obj.insert_row(table_name='translations',
+                                          keys_values={'en_word': new_word, 'he_word': translation,
+                                                       'chat_id': message.chat.id}))
 
     if all(statuses):
         send_message(message.chat.id, f'המילה {new_word} נוספה בהצלחה')
-        db_obj.increment_field(table_name='users', condition_field='chat_id', condition_value=message.chat.id, field='number_of_words')
+        db_obj.increment_field(table_name='users', condition_field='chat_id', condition_value=message.chat.id,
+                               field='number_of_words')
     else:
         send_message(message.chat.id, 'המערכת לא הצליחה להוסיף את המילה המבוקשת, שאל את המפתחים')
 
@@ -163,7 +175,8 @@ def change_waiting_time(message):
         assert new_time
         assert isinstance(new_time, int)
         assert new_time <= 24 * 60
-        update_status = db_obj.update_field(table_name='users', condition_field='chat_id', condition_value=message.chat.id, field='delay_time', value=new_time)
+        update_status = db_obj.update_field(table_name='users', condition_field='chat_id',
+                                            condition_value=message.chat.id, field='delay_time', value=new_time)
         if update_status:
             send_message(message.chat.id, f'זמן ההמתנה שונה ל-{new_time} דקות')
         else:
@@ -200,7 +213,8 @@ def get_translations(word):
 
 
 def send_new_word(chat_id):
-    all_trans = db_obj.get_all_values_by_field(table_name='translations', condition_field='chat_id', condition_value=chat_id)
+    all_trans = db_obj.get_all_values_by_field(table_name='translations', condition_field='chat_id',
+                                               condition_value=chat_id)
 
     en_words = list(set([trans['en_word'] for trans in all_trans]))
     chosen_en_word = random.choice(en_words)
@@ -217,13 +231,16 @@ def send_new_word(chat_id):
     random_he_words = []
     while additional_random_en_words:
         current_en_word = additional_random_en_words.pop()
-        current_random_he_word = random.choice([trans['he_word'] for trans in all_trans if trans['en_word'] == current_en_word])
+        current_random_he_word = random.choice(
+            [trans['he_word'] for trans in all_trans if trans['en_word'] == current_en_word])
         random_he_words.append(current_random_he_word)
 
     random_he_words.append(chosen_he_word)
 
     reply_markup = InlineKeyboardMarkup()
-    options = [InlineKeyboardButton(button_he_word, callback_data=f'compare:{chosen_en_word}|{chosen_he_word}|{button_he_word}') for button_he_word in random_he_words]
+    options = [InlineKeyboardButton(button_he_word,
+                                    callback_data=f'compare:{chosen_en_word}|{chosen_he_word}|{button_he_word}') for
+               button_he_word in random_he_words]
 
     for option in options:
         reply_markup.row(option)
@@ -270,16 +287,21 @@ def clean_chat(chat_id):
 
 
 def delete_word(chat_id, en_word):
-    delete_status = db_obj.delete_by_field(table_name='translations', field_condition='en_word', value_condition=en_word, second_field_condition='chat_id', second_value_condition=chat_id)
+    delete_status = db_obj.delete_by_field(table_name='translations', field_condition='en_word',
+                                           value_condition=en_word, second_field_condition='chat_id',
+                                           second_value_condition=chat_id)
 
     if delete_status:
-        current_user_details = db_obj.get_all_values_by_field(table_name='users', condition_field='chat_id', condition_value=chat_id, first_item=True)
+        current_user_details = db_obj.get_all_values_by_field(table_name='users', condition_field='chat_id',
+                                                              condition_value=chat_id, first_item=True)
         new_number_of_words_value = current_user_details['number_of_words'] - 1
-        db_obj.decrement_field(table_name='users', field='number_of_words', condition_field='chat_id', condition_value=chat_id)
+        db_obj.decrement_field(table_name='users', field='number_of_words', condition_field='chat_id',
+                               condition_value=chat_id)
 
         if eval(current_user_details['auto_send_active']) and new_number_of_words_value < 4:
             send_message(chat_id, f'שליחת המילים האוטומטית הופסקה, מספר המילים לא מספיקה ({new_number_of_words_value})')
-            db_obj.update_field(table_name='users', field='auto_send_active', condition_field='chat_id', condition_value=chat_id, value=False)
+            db_obj.update_field(table_name='users', field='auto_send_active', condition_field='chat_id',
+                                condition_value=chat_id, value=False)
 
 
 def lock_chat(chat_id):
@@ -300,7 +322,8 @@ def new_word_command(message):
 
 
 def new_words_worker(chat_id):
-    current_user_details = db_obj.get_all_values_by_field(table_name='users', condition_field='chat_id', condition_value=chat_id, first_item=True)
+    current_user_details = db_obj.get_all_values_by_field(table_name='users', condition_field='chat_id',
+                                                          condition_value=chat_id, first_item=True)
 
     while True:
         if eval(current_user_details['auto_send_active']):
@@ -308,7 +331,8 @@ def new_words_worker(chat_id):
         else:
             show_menu(chat_id)
 
-        current_user_details = db_obj.get_all_values_by_field(table_name='users', condition_field='chat_id', condition_value=chat_id, first_item=True)
+        current_user_details = db_obj.get_all_values_by_field(table_name='users', condition_field='chat_id',
+                                                              condition_value=chat_id, first_item=True)
         time.sleep(current_user_details['delay_time'] * 60)
 
 
@@ -330,7 +354,7 @@ def main(*args, **kwargs) -> int:
     except KeyboardInterrupt:
         logging.info('Quitting... (CTRL+C pressed)')
         return 0
-    except Exception:   # Catch-all for unexpected exceptions, with stack trace
+    except Exception:  # Catch-all for unexpected exceptions, with stack trace
         logging.exception(f'Unhandled exception occurred!')
         return 1
     finally:

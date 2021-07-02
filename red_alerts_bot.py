@@ -1,18 +1,24 @@
-from threading import Thread
+import os
+import sys
+import time
 import telebot
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+import datetime
+from threading import Thread
 from wrappers.config_wrapper import ConfigWrapper
 from wrappers.requets_wrapper import RequestWrapper
-import time
-import datetime
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 alarms = {}
 
-conf_obj = ConfigWrapper()
-telebot_conf = conf_obj.get_config_file('telebot_configurations')
-bot = telebot.TeleBot(telebot_conf['safe_ashkelon_token'])
+try:
+    TOKEN = os.environ["RED_ALERTS_BOT_TOKEN"]
+except KeyError:
+    print("Please set the environment variables: RED_ALERTS_BOT_TOKEN")
+    sys.exit(1)
 
-CURRENT_CHAT = telebot_conf['dev_env_chat_id']
+bot = telebot.TeleBot(TOKEN)
+
+CURRENT_CHAT = 2342
 OLD_ALARMS = []
 
 
@@ -41,6 +47,7 @@ def check_for_new_alarms():
     alerted_places = {}
     alerted_ids = []
 
+    conf_obj = ConfigWrapper()
     headers = conf_obj.get_config_file('oref_alerts_headers')
 
     while True:
