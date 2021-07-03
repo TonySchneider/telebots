@@ -4,9 +4,12 @@
 __author__ = 'Tony Schneider'
 __email__ = 'tonysch05@gmail.com'
 
+import sys
 import logging
+from retry import retry
 from mysql.connector import Error as MySQLError
 from mysql.connector import connect as MySQLConnection
+from wrappers.exceptions_wrapper import ExceptionDecorator
 
 
 class DBWrapper:
@@ -24,30 +27,39 @@ class DBWrapper:
 
     def set_config(self) -> dict:
         return {
-          'user': self.mysql_user,
-          'password': self.mysql_pass,
-          'host': self.host,
-          'database': self.database,
-          'raise_on_warnings': True,
-          'auth_plugin': 'mysql_native_password'
+            'user': self.mysql_user,
+            'password': self.mysql_pass,
+            'host': self.host,
+            'database': self.database,
+            'raise_on_warnings': True,
+            'auth_plugin': 'mysql_native_password'
         }
+
+    def create_connection(self) -> None:
+        try:
+            self.mysql_connector = MySQLConnection(**self._config)
+        except MySQLError as e:
+            logging.error(f"There was an issue with mysql connection - '{e}'")
+
+    def commit(self):
+        self.mysql_connector.commit()
 
     def close_connection(self) -> None:
         self.mysql_connector.close()
 
+    @ExceptionDecorator(exceptions=[Exception])
+    @retry(exceptions=Exception, tries=3, delay=2, jitter=2)
     def execute_command(self, command: str):
         output = True
-        try:
-            self.mysql_connector = MySQLConnection(**self._config)
-            self.mysql_cursor = self.mysql_connector.cursor(buffered=True, dictionary=True)
-            self.mysql_cursor.execute(command)
-            if 'SELECT' in command:
-                output = self.mysql_cursor.fetchall()
-            self.mysql_connector.commit()
-            self.mysql_connector.close()
-        except Exception as e:
-            logging.error(f"There was an issue to execute {command}. Error - '{e}'")
-            output = False
+        self.create_connection()
+        logging.debug(f"MySQL: executes '{command}' command")
+
+        self.mysql_cursor = self.mysql_connector.cursor(buffered=True, dictionary=True)
+        self.mysql_cursor.execute(command)
+        if 'SELECT' in command:
+            output = self.mysql_cursor.fetchall()
+        self.mysql_connector.commit()
+        self.close_connection()
         return output
 
     def insert_row(self, table_name: str, keys_values: dict):
@@ -88,7 +100,7 @@ class DBWrapper:
         if field:
             result = [item[field] for item in result]
 
-        return result[0] if first_item else result
+        return (result[0] if first_item else result) if result else False
 
     def get_specific_field_value(self, table_name: str, field_to_get: str, field_condition: str, value_condition):
         get_specific_field_value_command = f"SELECT {field_to_get} FROM {table_name} WHERE {field_condition}='{value_condition}'"
