@@ -10,17 +10,18 @@ from wrappers.db_wrapper import DBWrapper
 from wrappers.requets_wrapper import RequestWrapper
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)-10s | %(message)s', stream=sys.stdout)
-
 try:
     TOKEN = os.environ["TONY_ENGLISH_BOT_TOKEN"]
     MYSQL_USER = os.environ["MYSQL_USER"]
     MYSQL_PASS = os.environ["MYSQL_PASS"]
 except KeyError:
-    logging.error("Please set the environment variables: MYSQL_USER, MYSQL_PASS, TONY_ENGLISH_BOT_TOKEN")
+    logging.error("Please set the environment variables: MYSQL_USER, MYSQL_PASS, TONY_ENGLISH_BOT_TOKEN. Aborting...")
     sys.exit(1)
 
-db_obj = DBWrapper(host='127.0.0.1', mysql_user=MYSQL_USER, mysql_pass=MYSQL_PASS, database='english_bot')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)-10s | %(message)s', stream=sys.stdout)
+DBWrapper.set_config(host='127.0.0.1', mysql_user=MYSQL_USER, mysql_pass=MYSQL_PASS, database='english_bot')
+
+
 bot = telebot.TeleBot(TOKEN)
 
 USERS = []
