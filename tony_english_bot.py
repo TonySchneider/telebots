@@ -17,7 +17,7 @@ try:
     MYSQL_USER = os.environ["MYSQL_USER"]
     MYSQL_PASS = os.environ["MYSQL_PASS"]
 except KeyError:
-    print("Please set the environment variables: MYSQL_USER, MYSQL_PASS, TONY_ENGLISH_BOT_TOKEN")
+    logging.error("Please set the environment variables: MYSQL_USER, MYSQL_PASS, TONY_ENGLISH_BOT_TOKEN")
     sys.exit(1)
 
 db_obj = DBWrapper(host='127.0.0.1', mysql_user=MYSQL_USER, mysql_pass=MYSQL_PASS, database='english_bot')
@@ -28,6 +28,8 @@ MESSAGES = []
 
 
 def send_message(chat_id, text, reply_markup=None):
+    logging.debug(f"sending message to '{chat_id}'. (text- '{text}')")
+
     global MESSAGES
 
     msg_obj = bot.send_message(chat_id, text, reply_markup=reply_markup)
@@ -36,6 +38,8 @@ def send_message(chat_id, text, reply_markup=None):
 
 
 def show_menu(chat_id):
+    logging.debug(f"showing menu for '{chat_id}'")
+
     menu_buttons = {
         '1': 'הוסף מילה חדשה',
         '2': 'התחל/עצור שליחה אוטומטית',
@@ -56,6 +60,8 @@ def show_menu(chat_id):
 
 
 def show_wordlist(chat_id):
+    logging.debug(f"showing wordlist for '{chat_id}'")
+
     en_words = list(set(db_obj.get_all_values_by_field(table_name='translations', condition_field='chat_id',
                                                        condition_value=chat_id, field='en_word')))
     cross_icon = u"\u274c"
@@ -322,8 +328,10 @@ def new_word_command(message):
 
 
 def new_words_worker(chat_id):
-    current_user_details = db_obj.get_all_values_by_field(table_name='users', condition_field='chat_id',
-                                                          condition_value=chat_id, first_item=True)
+    current_user_details = db_obj.get_all_values_by_field(table_name='users', condition_field='chat_id', condition_value=chat_id, first_item=True)
+    if not current_user_details:
+        logging.error(f"Didn't manage to get user's details by the chat_id - '{chat_id}'\nAborting...")
+        sys.exit(1)
 
     while True:
         if eval(current_user_details['auto_send_active']):
@@ -336,8 +344,7 @@ def new_words_worker(chat_id):
         time.sleep(current_user_details['delay_time'] * 60)
 
 
-def main(*args, **kwargs) -> int:
-    global USERS
+if __name__ == '__main__':
     try:
         logging.info('Starting bot... Press CTRL+C to quit.')
 
@@ -352,16 +359,13 @@ def main(*args, **kwargs) -> int:
         bot.polling(none_stop=True)
 
     except KeyboardInterrupt:
-        logging.info('Quitting... (CTRL+C pressed)')
-        return 0
+        logging.info('Quitting... (CTRL+C pressed)\n Exits...')
     except Exception:  # Catch-all for unexpected exceptions, with stack trace
-        logging.exception(f'Unhandled exception occurred!')
-        return 1
+        logging.exception(f'Unhandled exception occurred!\n Aborting...')
     finally:
         logging.debug("cleaning chats..")
         for user in USERS:
             clean_chat(user['chat_id'])
 
-
-if __name__ == '__main__':
-    sys.exit(main(*sys.argv[1:]))
+        db_obj.close_connection()
+        sys.exit(0)
