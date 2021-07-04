@@ -10,7 +10,7 @@ from wrappers.db_wrapper import DBWrapper
 from wrappers.requets_wrapper import RequestWrapper
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)-10s | %(message)s', stream=sys.stdout)
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s | %(levelname)-10s | %(message)s', stream=sys.stdout)
 
 try:
     TOKEN = os.environ["TONY_ENGLISH_BOT_TOKEN"]
@@ -121,6 +121,8 @@ def handle_query(call):
             send_message(chat_id, 'מה אתה צריך????!!')
 
     elif data.startswith("compare:"):
+        logging.debug(f"comparison words for '{chat_id}'")
+
         button_callback = data.replace('compare:', '')
         en_word, he_word, chosen_he_word = button_callback.split('|')
         if he_word == chosen_he_word:
@@ -177,18 +179,20 @@ def add_new_word_to_db(message):
 
 def change_waiting_time(message):
     new_time = message.text
+    logging.debug(f"Changing time to '{new_time}'. | chat_id - '{message.chat.id}'")
+
     try:
-        assert new_time
-        assert isinstance(new_time, int)
-        assert new_time <= 24 * 60
+        assert new_time, "The object is empty"
+        assert new_time.isnumeric(), "The object is not numeric"
+        assert int(new_time) <= 24 * 60, "The number is more than 24 hours"
         update_status = db_obj.update_field(table_name='users', condition_field='chat_id',
                                             condition_value=message.chat.id, field='delay_time', value=new_time)
         if update_status:
             send_message(message.chat.id, f'זמן ההמתנה שונה ל-{new_time} דקות')
         else:
             send_message(message.chat.id, 'המערכת לא הצליחה לשנות את זמן ההמתנה')
-    except AssertionError:
-        pass
+    except AssertionError as e:
+        logging.error(f"There was an assertion error. Error - '{e}'. | method - 'change_waiting_time' | message.text - '{new_time}'")
     finally:
         unlock_chat(message.chat.id)
         show_menu(message.chat.id)
@@ -242,6 +246,8 @@ def send_new_word(chat_id):
         random_he_words.append(current_random_he_word)
 
     random_he_words.append(chosen_he_word)
+
+    random.shuffle(random_he_words)
 
     reply_markup = InlineKeyboardMarkup()
     options = [InlineKeyboardButton(button_he_word,
@@ -353,10 +359,13 @@ if __name__ == '__main__':
         for user in USERS:
             user['locked'] = False
 
-        for current_chat_id in [user['chat_id'] for user in USERS]:
-            Thread(target=new_words_worker, args=(current_chat_id,)).start()
-
         bot.polling(none_stop=True)
+
+        threads = []
+        for current_chat_id in [user['chat_id'] for user in USERS]:
+            thread = Thread(target=new_words_worker, args=(current_chat_id,))
+            thread.start()
+            threads.append(thread)
 
     except KeyboardInterrupt:
         logging.info('Quitting... (CTRL+C pressed)\n Exits...')
