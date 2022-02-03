@@ -6,7 +6,7 @@ node {
         stage('Pull updated code'){
             dir('/home/jenkins/telebots'){
                 sh """
-                echo 'pulling code.'
+                echo 'pulling code'
                 git pull
                 """
             }
@@ -19,7 +19,7 @@ node {
                     echo 'Sets necessary environment variables'
                     export TONY_ENGLISH_BOT_TOKEN='${TOKEN}' && export MYSQL_USER='${username}' && export MYSQL_PASS='${password}'
                     echo 'Killing all screen sessions'
-                    killall screen
+                    pkill screen
                     echo 'attaching new screen session'
                     screen -d -m python3 telebots/tony_english_bot.py
                     """
