@@ -10,7 +10,6 @@ from wrappers.db_wrapper import DBWrapper
 from wrappers.requets_wrapper import RequestWrapper
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s | %(levelname)-10s | %(message)s', stream=sys.stdout)
 
 try:
     TOKEN = os.environ["TONY_ENGLISH_BOT_TOKEN"]
