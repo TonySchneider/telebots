@@ -19,7 +19,7 @@ node {
                     echo 'Sets necessary environment variables'
                     export TONY_ENGLISH_BOT_TOKEN='${TOKEN}' && export MYSQL_USER='${username}' && export MYSQL_PASS='${password}'
                     echo 'Killing all screen sessions'
-                    screen -ls | grep '(Detached)' | awk 'sys {screen -S $1 -X quit}'
+                    screen -ls | grep '(Detached)' | awk 'sys {screen -S ${1} -X quit}'
                     echo 'attaching new screen session'
                     screen -d -m python3 telebots/tony_english_bot.py
                     """
