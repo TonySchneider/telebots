@@ -17,7 +17,7 @@ node {
                                   usernamePassword(credentialsId: 'mysql_credentials', passwordVariable: 'password', usernameVariable: 'username')]) {
                     sh """
                     echo 'Sets necessary environment variables'
-                    export TONY_ENGLISH_BOT_TOKEN='${SECRET}' && export MYSQL_USER='${username}' && export MYSQL_PASS='${password}'
+                    export TONY_ENGLISH_BOT_TOKEN='${TOKEN}' && export MYSQL_USER='${username}' && export MYSQL_PASS='${password}'
                     echo 'Killing all screen sessions'
                     killall screen
                     echo 'attaching new screen session'
