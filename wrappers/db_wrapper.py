@@ -8,62 +8,58 @@ import sys
 import logging
 from retry import retry
 from mysql.connector import Error as MySQLError
-from mysql.connector import MySQLConnection
+from mysql.connector import connect as MySQLConnection
 from wrappers.exceptions_wrapper import ExceptionDecorator
 
 
 class DBWrapper:
-    global_config = None
-
-    def __init__(self, host: str = None, mysql_user: str = None, mysql_pass: str = None, database: str = None):
+    def __init__(self, host: str, mysql_user: str, mysql_pass: str, database: str):
         """
         This class wraps all MySQL functionality.
         """
-        self.set_config(host, database, mysql_user, mysql_pass)
+        self.host = host
+        self.database = database
+        self.mysql_user = mysql_user
+        self.mysql_pass = mysql_pass
+        self._config = self.set_config()
         self.mysql_connector = None
         self.mysql_cursor = None
-        self.create_connection()
 
-    def __del__(self):
-        logging.debug("destroying db object and closing connection")
-        self.close_connection()
-
-    @staticmethod
-    def set_config(host: str, mysql_user: str, mysql_pass: str, database: str):
-        DBWrapper.global_config = {
-            'user': mysql_user,
-            'password': mysql_pass,
-            'host': host,
-            'database': database,
+    def set_config(self) -> dict:
+        return {
+            'user': self.mysql_user,
+            'password': self.mysql_pass,
+            'host': self.host,
+            'database': self.database,
             'raise_on_warnings': True,
             'auth_plugin': 'mysql_native_password'
         }
 
     def create_connection(self) -> None:
         try:
-            self.mysql_connector = MySQLConnection(**self.global_config)
-            self.mysql_cursor = self.mysql_connector.cursor(buffered=True, dictionary=True)
+            self.mysql_connector = MySQLConnection(**self._config)
         except MySQLError as e:
             logging.error(f"There was an issue with mysql connection - '{e}'")
 
+    def commit(self):
+        self.mysql_connector.commit()
+
     def close_connection(self) -> None:
-        self.mysql_cursor.close()
         self.mysql_connector.close()
 
-    # @ExceptionDecorator(exceptions=[Exception])
-    # @retry(exceptions=Exception, tries=3, delay=2, jitter=2)
+    @ExceptionDecorator(exceptions=[Exception])
+    @retry(exceptions=Exception, tries=3, delay=2, jitter=2)
     def execute_command(self, command: str):
-        if not self.mysql_connector.is_connected():
-            self.create_connection()
-
         output = True
+        self.create_connection()
         logging.debug(f"MySQL: executes '{command}' command")
+
+        self.mysql_cursor = self.mysql_connector.cursor(buffered=True, dictionary=True)
         self.mysql_cursor.execute(command)
         if 'SELECT' in command:
             output = self.mysql_cursor.fetchall()
-        else:
-            self.mysql_connector.commit()
-
+        self.mysql_connector.commit()
+        self.close_connection()
         return output
 
     def insert_row(self, table_name: str, keys_values: dict):
