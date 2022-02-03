@@ -6,7 +6,7 @@ node {
         stage('Pull updated code'){
             dir('/home/jenkins/telebots'){
                 sh """
-                echo 'pulling code'
+                echo 'pulling code.'
                 git pull
                 """
             }
