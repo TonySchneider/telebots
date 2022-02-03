@@ -20,7 +20,10 @@ except KeyError:
     logging.error("Please set the environment variables: MYSQL_USER, MYSQL_PASS, TONY_ENGLISH_BOT_TOKEN")
     sys.exit(1)
 
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)-10s | %(message)s', stream=sys.stdout)
 db_obj = DBWrapper(host='127.0.0.1', mysql_user=MYSQL_USER, mysql_pass=MYSQL_PASS, database='english_bot')
+
 bot = telebot.TeleBot(TOKEN)
 
 USERS = []
