@@ -1,13 +1,13 @@
 import logging
+from wrappers.db_wrapper import DBWrapper
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)-10s | %(message)s', stream=sys.stdout)
 
 
 class UserWrapper:
-    db_obj = None
-
     def __init__(self, user_details: dict):
         self.user_details = user_details
+        self.db_obj = DBWrapper()
 
     def __del__(self):
         logging.debug("updating DBs")
@@ -15,6 +15,3 @@ class UserWrapper:
 
     def update_user(self):
         pass
-
-    @staticmethod
-    def set_db_obj(db_obj): UserWrapper.db_obj = db_obj
