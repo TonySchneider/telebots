@@ -4,12 +4,10 @@ node {
             echo 'Cleaning work space'
         }
         stage('Pull updated code'){
-            dir('/home/jenkins/telebots'){
-                sh """
-                echo 'pulling code'
-                """
-                git branch: 'master', credentialsId: 'github-cred', url: 'https://github.com/TonySchneider/telebots.git'
-            }
+            sh """
+            echo 'pulling code'
+            """
+            git branch: 'master', credentialsId: 'github-cred', url: 'https://github.com/TonySchneider/telebots.git'
         }
         stage('Deploy bot services'){
             withCredentials([string(credentialsId: 'english_token_bot', variable: 'TOKEN'),
