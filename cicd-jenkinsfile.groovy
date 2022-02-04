@@ -15,7 +15,7 @@ node {
             withCredentials([string(credentialsId: 'english_token_bot', variable: 'TOKEN'),
                                       usernamePassword(credentialsId: 'mysql_credentials', passwordVariable: 'password', usernameVariable: 'username')]) {
                 sh """
-                    cd /home/tony
+                    sudo cd /home/tony
                     echo 'Sets necessary environment variables'
                     sudo export TONY_ENGLISH_BOT_TOKEN='${TOKEN}' && export MYSQL_USER='${username}' && export MYSQL_PASS='${password}'
                     echo 'Killing all screen sessions'
