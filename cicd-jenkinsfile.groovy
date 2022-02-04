@@ -7,21 +7,20 @@ node {
             dir('/home/jenkins/telebots'){
                 sh """
                 echo 'pulling code'
-                git pull
                 """
+                git branch: 'master', credentialsId: 'github-cred', url: 'git@github.com/TonySchneider/telebots.git'
             }
         }
         stage('Deploy bot services'){
             withCredentials([string(credentialsId: 'english_token_bot', variable: 'TOKEN'),
                                       usernamePassword(credentialsId: 'mysql_credentials', passwordVariable: 'password', usernameVariable: 'username')]) {
                 sh """
-                    sudo cd /home/tony
                     echo 'Sets necessary environment variables'
-                    sudo export TONY_ENGLISH_BOT_TOKEN='${TOKEN}' && export MYSQL_USER='${username}' && export MYSQL_PASS='${password}'
+                    export TONY_ENGLISH_BOT_TOKEN='${TOKEN}' && export MYSQL_USER='${username}' && export MYSQL_PASS='${password}'
                     echo 'Killing all screen sessions'
-                    sudo screen -ls | grep '(Detached)' | awk 'sys {screen -S ${1} -X quit}'
+                    screen -ls | grep '(Detached)' | awk 'sys {screen -S ${1} -X quit}'
                     echo 'attaching new screen session'
-                    sudo screen -d -m python3 telebots/tony_english_bot.py
+                    screen -d -m python3 telebots/tony_english_bot.py
                 """
             }
         }
