@@ -18,7 +18,8 @@ node {
                     echo 'Killing all screen sessions'
                     screen -ls | grep '(Detached)' | awk 'sys {screen -S ${1} -X quit}'
                     echo 'attaching new screen session'
-                    screen -d -m python3 telebots/tony_english_bot.py
+                    ls -l
+                    screen -d -m python3 tony_english_bot.py
                 """
             }
         }
