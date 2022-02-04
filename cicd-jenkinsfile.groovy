@@ -8,7 +8,7 @@ node {
                 sh """
                 echo 'pulling code'
                 """
-                git branch: 'master', credentialsId: 'github-cred', url: 'git@github.com/TonySchneider/telebots.git'
+                git branch: 'origin/master', credentialsId: 'github-cred', url: 'git@github.com/TonySchneider/telebots.git'
             }
         }
         stage('Deploy bot services'){
