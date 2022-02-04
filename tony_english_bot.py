@@ -21,11 +21,11 @@ except KeyError:
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)-10s | %(message)s', stream=sys.stdout)
-db_obj = DBWrapper(host='127.0.0.1', mysql_user=MYSQL_USER, mysql_pass=MYSQL_PASS, database='english_bot')
+db_obj = DBWrapper(host='176.58.99.61', mysql_user=MYSQL_USER, mysql_pass=MYSQL_PASS, database='english_bot')
 
 bot = telebot.TeleBot(TOKEN)
 
-USERS = []
+USERS = {}
 MESSAGES = []
 
 
@@ -261,7 +261,7 @@ def send_new_word(chat_id):
 
     clean_chat(chat_id)
     send_message(chat_id, f'בחר את התרגום של {chosen_en_word}', reply_markup=reply_markup)
-
+    logging.debug(f"sent word '{chosen_en_word}' to chat id - '{chat_id}'")
     lock_chat(chat_id)
 
 
@@ -319,20 +319,24 @@ def delete_word(chat_id, en_word):
 
 
 def lock_chat(chat_id):
-    for user in USERS:
-        if user['chat_id'] == chat_id:
-            user['locked'] = True
+    global USERS
+    USERS[chat_id]['locked'] = True
 
 
 def unlock_chat(chat_id):
-    for user in USERS:
-        if user['chat_id'] == chat_id:
-            user['locked'] = False
+    global USERS
+    USERS[chat_id]['locked'] = False
 
 
 @bot.message_handler(func=lambda message: message.text == 'שלח מילה')
 def new_word_command(message):
     send_new_word(message.chat.id)
+
+
+@bot.message_handler(func=lambda message: message.text == 'תפריט')
+def new_word_command(message):
+    if not USERS[message.chat.id]['locked']:
+        show_menu(message.chat.id)
 
 
 def new_words_worker(chat_id):
@@ -342,10 +346,10 @@ def new_words_worker(chat_id):
         sys.exit(1)
 
     while True:
-        if eval(current_user_details['auto_send_active']):
+        if eval(current_user_details['auto_send_active']) and not USERS[chat_id]['locked']:
             send_new_word(chat_id)
-        else:
-            show_menu(chat_id)
+        # else:
+        #     show_menu(chat_id)
 
         current_user_details = db_obj.get_all_values_by_field(table_name='users', condition_field='chat_id',
                                                               condition_value=chat_id, first_item=True)
@@ -356,27 +360,27 @@ if __name__ == '__main__':
     try:
         logging.info('Starting bot... Press CTRL+C to quit.')
 
-        USERS = db_obj.get_all_values_by_field(table_name='users')
+        fetched_users = db_obj.get_all_values_by_field(table_name='users')
 
-        for user in USERS:
-            user['locked'] = False
-
-        bot.polling(none_stop=True)
+        for user in fetched_users:
+            USERS[user['chat_id']] = user
+            USERS[user['chat_id']]['locked'] = False
 
         threads = []
-        for current_chat_id in [user['chat_id'] for user in USERS]:
-            thread = Thread(target=new_words_worker, args=(current_chat_id,))
+        for registered_chat in USERS.keys():
+            thread = Thread(target=new_words_worker, args=(registered_chat,))
             thread.start()
             threads.append(thread)
 
+        bot.polling(none_stop=True)
     except KeyboardInterrupt:
         logging.info('Quitting... (CTRL+C pressed)\n Exits...')
     except Exception:  # Catch-all for unexpected exceptions, with stack trace
         logging.exception(f'Unhandled exception occurred!\n Aborting...')
     finally:
         logging.debug("cleaning chats..")
-        for user in USERS:
-            clean_chat(user['chat_id'])
+        for registered_chat in USERS.keys():
+            clean_chat(registered_chat)
 
         db_obj.close_connection()
         sys.exit(0)
