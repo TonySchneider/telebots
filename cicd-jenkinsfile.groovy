@@ -19,7 +19,7 @@ node {
                     screen -ls | grep '(Detached)' | awk 'sys {screen -S ${1} -X quit}'
                     echo 'attaching new screen session'
                     ls -l
-                    screen -d -m python3 tony_english_bot.py
+                    JENKINS_NODE_COOKIE=dontKillMe 'python3 tony_english_bot.py'
                 """
             }
         }
