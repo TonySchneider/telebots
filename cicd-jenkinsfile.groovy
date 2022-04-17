@@ -17,9 +17,10 @@ node {
                     export TONY_ENGLISH_BOT_TOKEN='${TOKEN}' && export MYSQL_USER='${username}' && export MYSQL_PASS='${password}'
                     echo 'Killing all screen sessions'
                     screen -ls | grep '(Detached)' | awk 'sys {screen -S ${1} -X quit}'
-                    echo 'attaching new screen session'
+                    echo 'executing python service in background'
                     ls -l
-                    JENKINS_NODE_COOKIE=dontKillMe 'python3 tony_english_bot.py'
+                    chmod +x service-executor.sh
+                    JENKINS_NODE_COOKIE=dontKillMe ./service-executor.sh
                 """
             }
         }
