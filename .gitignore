@@ -130,3 +130,6 @@ dmypy.json
 
 # Chat IDS:
 chat_ids.txt
+
+# idea folder
+.idea
