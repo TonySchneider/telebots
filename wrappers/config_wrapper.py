@@ -1,7 +1,10 @@
-import yaml
 import sys
-import logging
+import yaml
 from pathlib import Path
+
+from helpers.loggers import get_logger
+
+logger = get_logger(__name__)
 
 
 class ConfigWrapper:
@@ -30,7 +33,7 @@ class ConfigWrapper:
                 try:
                     all_files_data[file.stem] = yaml.safe_load(stream)
                 except yaml.YAMLError:
-                    logging.exception(
+                    logger.exception(
                         f"There was an issue with {file} file. "
                         f"The system didn't manage to open it. "
                         f"\nAborting..."

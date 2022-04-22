@@ -1,59 +1,106 @@
-import sys
-import time
-import logging
-
+from helpers.loggers import get_logger
 from core.word_sender import WordSender
+
+logger = get_logger(__name__)
 
 
 class EnglishBotUser:
-    active_users = []
+    active_users = {}
 
     @staticmethod
-    def initial_active_users(users_db_data):
-        logging.debug(f"Initializing users")
+    def get_user_by_chat_id(chat_id: int):
+        return EnglishBotUser.active_users[chat_id]
 
-        for user in users_db_data:
-            active_user = EnglishBotUser(user['chat_id'])
-
-            EnglishBotUser.active_users.append(active_user)
-
-    def __init__(self, chat_id):
+    def __init__(self, chat_id: int, word_sender_active: bool, delay_time: int, num_of_words: int,
+                 user_translations: list, db_connector, global_bot):
         self.chat_id = chat_id
-        self.word_sender = WordSender(target=self.new_words_worker, args=(self.chat_id,))
+        self.word_sender = None
+        self.messages = []
+        self.word_sender_active = word_sender_active
+        self.global_bot = global_bot
+        self.delay_time = delay_time
+        self.num_of_words = num_of_words
+        self.user_translations = user_translations
+        self.db_connector = db_connector
 
-    def new_words_worker(self, chat_id):
-        current_user_details = db_obj.get_all_values_by_field(table_name='users',
-                                                              condition_field='chat_id',
-                                                              condition_value=chat_id,
-                                                              first_item=True)
-        if not current_user_details:
-            logging.error(f"Didn't manage to get user's details by the chat_id - '{chat_id}'\nAborting...")
-            sys.exit(1)
+        if self.word_sender_active:
+            self.activate_word_sender()
 
-        while True:
-            with self.word_sender.pause_cond:
-                while self.word_sender.paused:
-                    self.word_sender.pause_cond.wait()
+        EnglishBotUser.active_users[chat_id] = self
 
-                if eval(current_user_details['auto_send_active']) and not USERS[chat_id]['locked']:
-                    self.send_new_word(chat_id)
-                # else:
-                #     show_menu(chat_id)
+    def is_locked(self):
+        return self.word_sender.paused if self.word_sender else False
 
-                current_user_details = db_obj.get_all_values_by_field(table_name='users',
-                                                                      condition_field='chat_id',
-                                                                      condition_value=chat_id,
-                                                                      first_item=True)
-            time.sleep(current_user_details['delay_time'] * 60)
+    def activate_word_sender(self):
+        logger.debug(f"Activating word sender (chat_id={self.chat_id})")
 
-    def start_word_sender(self):
-        logging.debug(f"Starting word sender (chat_id={self.chat_id})")
+        self.word_sender = WordSender(chat_id=self.chat_id,
+                                      delay_time=self.delay_time,
+                                      global_bot=self.global_bot)
         self.word_sender.start()
 
-    def lock_chat(self):
-        logging.debug(f"Pausing word sender (chat_id={self.chat_id})")
-        self.word_sender.pause()
+        # TODO: change the following to celery task
+        self.db_connector.update_field(table_name='users', field='auto_send_active', condition_field='chat_id',
+                                       condition_value=self.chat_id, value=True)
+        self.word_sender_active = True
 
-    def unlock_chat(self):
-        logging.debug(f"Resuming word sender (chat_id={self.chat_id})")
-        self.word_sender.resume()
+    def pause_sender(self):
+        logger.debug(f"Pausing word sender (chat_id={self.chat_id})")
+        if self.word_sender:
+            self.word_sender.pause()
+
+    def resume_sender(self):
+        logger.debug(f"Resuming word sender (chat_id={self.chat_id})")
+        if self.word_sender:
+            self.word_sender.resume()
+
+    def deactivate_word_sender(self):
+        logger.debug(f"Deactivating word sender (chat_id={self.chat_id})")
+
+        # change the status in DB
+        self.db_connector.update_field(table_name='users', field='auto_send_active', condition_field='chat_id',
+                                       condition_value=self.chat_id, value=False)
+
+        # change in the object (mem)
+        self.word_sender_active = False
+
+        # stop the thread
+        if self.word_sender:
+            self.word_sender.stop()
+            self.word_sender = None
+
+    def delete_word(self, en_word: str) -> bool:
+        logger.debug(f"Deleting word ({en_word})")
+
+        delete_status = self.db_connector.delete_by_field(table_name='translations', field_condition='en_word',
+                                                          value_condition=en_word, second_field_condition='chat_id',
+                                                          second_value_condition=self.chat_id)
+
+        if delete_status:
+            self.num_of_words -= 1
+            self.user_translations = [translate for translate in self.user_translations if translate['en_word'] != en_word]
+
+        return delete_status
+
+    def update_delay_time(self, new_time: int) -> bool:
+        update_status = self.db_connector.update_field(table_name='users', condition_field='chat_id',
+                                                       condition_value=self.chat_id, field='delay_time',
+                                                       value=new_time)
+
+        if update_status:
+            self.delay_time = new_time
+
+        return update_status
+
+    def update_translations(self, translations) -> bool:
+        insertion_status = self.db_connector.insert_multiple_rows(table_name='translations',
+                                                                  keys_values=translations)
+
+        if insertion_status:
+            self.user_translations += translations
+
+        return insertion_status
+
+    def close(self):
+        if self.word_sender:
+            self.deactivate_word_sender()

@@ -1,36 +1,26 @@
-import os
-import sys
-import time
 import random
-import telebot
-import logging
-from threading import Thread, Lock
+from typing import Mapping
 from googletrans import Translator
 
+from helpers.loggers import get_logger
 from core.english_bot_user import EnglishBotUser
-from core.word_sender import WordSender
-from wrappers.db_wrapper import DBWrapper
-from wrappers.requets_wrapper import RequestWrapper
+# from helpers.trenslations import get_translations
+from core._base_telebot_extension import BaseTelebotExtension
+
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-import logging
-from typing import Union, Optional, List
-
-from telebot import TeleBot, types
-from telebot.async_telebot import REPLY_MARKUP_TYPES
-
-from core._base_telebot_extension import BaseTelebotExtension
+logger = get_logger(__name__)
 
 
 class EnglishBotTelebotExtension(BaseTelebotExtension):
-    MESSAGES: List
+    MESSAGES: list
 
     def __init__(self, token: str):
         super(EnglishBotTelebotExtension, self).__init__(token)
         self.word_sender = None
 
     def show_menu(self, chat_id):
-        logging.debug(f"showing menu for '{chat_id}'")
+        logger.debug(f"showing menu for '{chat_id}'")
 
         menu_buttons = {
             '1': 'הוסף מילה חדשה',
@@ -51,10 +41,10 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
         self.send_message(chat_id, "תפריט", reply_markup=reply_markup)
 
     def show_wordlist(self, chat_id):
-        logging.debug(f"showing wordlist for '{chat_id}'")
+        logger.debug(f"showing wordlist for '{chat_id}'")
+        user = EnglishBotUser.get_user_by_chat_id(chat_id)
 
-        en_words = list(set(db_obj.get_all_values_by_field(table_name='translations', condition_field='chat_id',
-                                                           condition_value=chat_id, field='en_word')))
+        en_words = list(set([translate['en_word'] for translate in user.user_translations]))
         cross_icon = u"\u274c"
 
         words_buttons = [InlineKeyboardButton(en_word, callback_data=f'word:{en_word}') for en_word in en_words]
@@ -68,10 +58,35 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
 
         reply_markup.row(InlineKeyboardButton("חזרה לתפריט הראשי", callback_data=f'exit'))
 
-        # clean_chat(chat_id)
+        self.clean_chat(chat_id)
         self.send_message(chat_id, "רשימת המילים שלך:", reply_markup=reply_markup)
 
+    def get_translations(self, word):
+        translator = Translator()
+        trans_obj = translator.translate(word, dest='he')
+
+        all_translations = trans_obj.extra_data['all-translations']
+        if not all_translations:
+            return [trans_obj.text] if hasattr(trans_obj, 'text') else None
+
+        return_in_hebrew_list = []
+
+        for translation in all_translations:
+            current_list = translation[2]
+            for trans in current_list:
+                if any(isinstance(obj, float) for obj in trans):
+                    return_in_hebrew_list.append(trans[0])
+
+        if not return_in_hebrew_list:
+            for translation in all_translations:
+                current_list = translation[2]
+                return_in_hebrew_list.append(current_list[0][0])
+
+        return return_in_hebrew_list
+
     def add_new_word_to_db(self, message):
+        chat_id = message.chat.id
+        user = EnglishBotUser.get_user_by_chat_id(chat_id)
         new_word = message.text.lower()
 
         try:
@@ -82,57 +97,54 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
             self.send_message(message.chat.id, 'המילה צריכה להכיל רק אותיות ולהיות לא יותר מ45 תווים')
             return
 
-        translations = get_translations(new_word)
+        translations = [{'en_word': new_word, 'he_word': translation,
+                         'chat_id': chat_id} for translation in self.get_translations(new_word)]
         if not translations:
-            self.send_message(message.chat.id, 'המערכת לא הצליחה למצוא תרגום למילה המבוקשת')
+            self.send_message(chat_id, 'המערכת לא הצליחה למצוא תרגום למילה המבוקשת')
             return
 
-        statuses = []
+        insertion_status = user.update_translations(translations)
 
-        for translation in translations:
-            statuses.append(db_obj.insert_row(table_name='translations',
-                                              keys_values={'en_word': new_word, 'he_word': translation,
-                                                           'chat_id': message.chat.id}))
-
-        if all(statuses):
-            self.send_message(message.chat.id, f'המילה {new_word} נוספה בהצלחה')
-            db_obj.increment_field(table_name='users', condition_field='chat_id', condition_value=message.chat.id,
-                                   field='number_of_words')
+        if insertion_status:
+            self.send_message(chat_id, f'המילה {new_word} נוספה בהצלחה')
         else:
-            self.send_message(message.chat.id, 'המערכת לא הצליחה להוסיף את המילה המבוקשת, שאל את המפתחים')
+            self.send_message(chat_id, 'המערכת לא הצליחה להוסיף את המילה המבוקשת, שאל את המפתחים')
 
-        self.show_menu(message.chat.id)
+        self.show_menu(chat_id)
 
     def change_waiting_time(self, message):
+        chat_id = message.chat.id
+        user = EnglishBotUser.get_user_by_chat_id(chat_id)
+
         new_time = message.text
-        logging.debug(f"Changing time to '{new_time}'. | chat_id - '{message.chat.id}'")
+        logger.debug(f"Changing time to '{new_time}'. | chat_id - '{chat_id}'")
 
         try:
             assert new_time, "The object is empty"
             assert new_time.isnumeric(), "The object is not numeric"
             assert int(new_time) <= 24 * 60, "The number is more than 24 hours"
-            update_status = db_obj.update_field(table_name='users', condition_field='chat_id',
-                                                condition_value=message.chat.id, field='delay_time', value=new_time)
+
+            update_status = user.update_delay_time(new_time)
             if update_status:
-                self.send_message(message.chat.id, f'זמן ההמתנה שונה ל-{new_time} דקות')
+                self.send_message(chat_id, f'זמן ההמתנה שונה ל-{new_time} דקות')
             else:
-                self.send_message(message.chat.id, 'המערכת לא הצליחה לשנות את זמן ההמתנה')
+                self.send_message(chat_id, 'המערכת לא הצליחה לשנות את זמן ההמתנה')
         except AssertionError as e:
-            logging.error(
+            logger.error(
                 f"There was an assertion error. Error - '{e}'. | method - 'change_waiting_time' | message.text - '{new_time}'")
         finally:
-            self.unlock_chat(message.chat.id)
-            self.show_menu(message.chat.id)
+            self.resume_user_word_sender(chat_id)
+            self.show_menu(chat_id)
 
     def send_new_word(self, chat_id):
-        all_trans = db_obj.get_all_values_by_field(table_name='translations', condition_field='chat_id',
-                                                   condition_value=chat_id)
+        user = EnglishBotUser.get_user_by_chat_id(chat_id)
 
-        en_words = list(set([trans['en_word'] for trans in all_trans]))
+        en_words = list(set([trans['en_word'] for trans in user.user_translations]))
         chosen_en_word = random.choice(en_words)
         en_words.remove(chosen_en_word)
 
-        chosen_he_word = random.choice([trans['he_word'] for trans in all_trans if trans['en_word'] == chosen_en_word])
+        chosen_he_word = random.choice(
+            [trans['he_word'] for trans in user.user_translations if trans['en_word'] == chosen_en_word])
 
         additional_random_en_words = []
         while len(additional_random_en_words) < 3:
@@ -144,7 +156,7 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
         while additional_random_en_words:
             current_en_word = additional_random_en_words.pop()
             current_random_he_word = random.choice(
-                [trans['he_word'] for trans in all_trans if trans['en_word'] == current_en_word])
+                [trans['he_word'] for trans in user.user_translations if trans['en_word'] == current_en_word])
             random_he_words.append(current_random_he_word)
 
         random_he_words.append(chosen_he_word)
@@ -159,37 +171,39 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
         for option in options:
             reply_markup.row(option)
 
-        # clean_chat(chat_id)
+        self.clean_chat(chat_id)
         self.send_message(chat_id, f'בחר את התרגום של {chosen_en_word}', reply_markup=reply_markup)
-        logging.debug(f"sent word '{chosen_en_word}' to chat id - '{chat_id}'")
-        self.lock_chat(chat_id)
+        logger.debug(f"sent word '{chosen_en_word}' to chat id - '{chat_id}'")
+        self.pause_user_word_sender(chat_id)
 
     def delete_word(self, chat_id, en_word):
-        delete_status = db_obj.delete_by_field(table_name='translations', field_condition='en_word',
-                                               value_condition=en_word, second_field_condition='chat_id',
-                                               second_value_condition=chat_id)
+        user = EnglishBotUser.get_user_by_chat_id(chat_id)
+
+        delete_status = user.delete_word(en_word)
 
         if delete_status:
-            current_user_details = db_obj.get_all_values_by_field(table_name='users', condition_field='chat_id',
-                                                                  condition_value=chat_id, first_item=True)
-            new_number_of_words_value = current_user_details['number_of_words'] - 1
-            db_obj.decrement_field(table_name='users', field='number_of_words', condition_field='chat_id',
-                                   condition_value=chat_id)
-
-            if eval(current_user_details['auto_send_active']) and new_number_of_words_value < 4:
+            self.send_message(chat_id, f"המילה {en_word} נמחקה בהצלחה")
+            if user.word_sender_active and user.num_of_words < 4:
                 self.send_message(chat_id,
-                                  f'שליחת המילים האוטומטית הופסקה, מספר המילים לא מספיקה ({new_number_of_words_value})')
-                db_obj.update_field(table_name='users', field='auto_send_active', condition_field='chat_id',
-                                    condition_value=chat_id, value=False)
+                                  f'שליחת המילים האוטומטית הופסקה, מספר המילים לא מספיקה ({user.num_of_words})')
+        else:
+            self.send_message(chat_id, "המערכת נתקלה בתקלה, המילה המבוקשת לא נמחקה.")
 
-    def polling(self, non_stop: bool = False, skip_pending=False, interval: int = 0, timeout: int = 20,
-                long_polling_timeout: int = 20, allowed_updates: Optional[List[str]] = None,
-                none_stop: Optional[bool] = None):
+    def polling(self, **kwargs):
+        super().polling(**kwargs)
 
-        # TODO: check necessity of the lock object
-        # threads_lock = Lock()
-        # threads = []
-        for user in EnglishBotUser.active_users:
-            user.start_word_sender()
+    @staticmethod
+    def pause_user_word_sender(chat_id):
+        active_users: "Mapping[int, EnglishBotUser]" = EnglishBotUser.active_users
 
-        super().polling(none_stop=True)
+        active_users[chat_id].pause_sender()
+
+    @staticmethod
+    def resume_user_word_sender(chat_id):
+        active_users: "Mapping[int, EnglishBotUser]" = EnglishBotUser.active_users
+
+        active_users[chat_id].resume_sender()
+
+    def close(self):
+        for chat_id, active_user in EnglishBotUser.active_users.items():
+            active_user.close()

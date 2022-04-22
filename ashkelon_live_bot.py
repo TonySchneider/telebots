@@ -1,18 +1,16 @@
 import os
 import sys
 import time
-import random
 import telebot
-import logging
-import asyncio
 from typing import Union
 from threading import Thread
-from googletrans import Translator
-from datetime import datetime, timedelta
-from wrappers.db_wrapper import DBWrapper
-from telethon import TelegramClient, events, errors, tl
-from wrappers.requets_wrapper import RequestWrapper
+from telethon import TelegramClient, events, errors
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+from helpers.loggers import get_logger
+
+logger = get_logger(__name__)
+
 
 try:
     TELEGRAM_API_ID = os.environ["TELEGRAM_API_ID"]
@@ -23,15 +21,15 @@ try:
 
     TELEGRAM_API_ID = int(TELEGRAM_API_ID)
 except KeyError:
-    logging.error("Please set the environment variables: MYSQL_USER, MYSQL_PASS, TONY_ENGLISH_BOT_TOKEN")
+    logger.error("Please set the environment variables: MYSQL_USER, MYSQL_PASS, TONY_ENGLISH_BOT_TOKEN")
     sys.exit(1)
 except AssertionError:
-    logging.error("Please set the environment variables properly")
+    logger.error("Please set the environment variables properly")
     sys.exit(1)
 
 # initial objects
-logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)-10s | %(message)s', stream=sys.stdout)
-# db_obj = DBWrapper(host='', mysql_user=MYSQL_USER, mysql_pass=MYSQL_PASS, database='english_bot')
+logger.basicConfig(level=logger.INFO, format='%(asctime)s | %(levelname)-10s | %(message)s', stream=sys.stdout)
+# db_connector = DBWrapper(host='', mysql_user=MYSQL_USER, mysql_pass=MYSQL_PASS, database='english_bot')
 bot = telebot.TeleBot(TOKEN)
 client = TelegramClient('session_name', TELEGRAM_API_ID, TELEGRAM_API_HASH)
 
@@ -68,7 +66,7 @@ async def send_me_a_message(message_text: str):
 
 
 def accept_new_report(message_text):
-    logging.debug("Sending new report to TS chat and ask for acceptation")
+    logger.debug("Sending new report to TS chat and ask for acceptation")
 
     menu_buttons = {
         '1': 'שלח',
@@ -90,11 +88,11 @@ async def my_event_handler(event):
     global last_message
 
     if 'אשקלון' in event.message.text:
-        logging.info('found message by the ashkelon word. will send it..')
+        logger.info('found message by the ashkelon word. will send it..')
         sent = False
         while not sent:
             try:
-                logging.debug(f'sending message to {test_group_id}')
+                logger.debug(f'sending message to {test_group_id}')
                 last_message = event.message
                 accept_new_report(event.message.text)
                 sent = True
@@ -105,18 +103,18 @@ async def my_event_handler(event):
 
 if __name__ == '__main__':
     try:
-        logging.info('Starting bot...')
+        logger.info('Starting bot...')
         Thread(target=bot.polling, args=(True,)).start()
 
-        logging.info('Starting Telethon client...')
+        logger.info('Starting Telethon client...')
         client.start()
         client.run_until_disconnected()
     except KeyboardInterrupt:
-        logging.info('Quitting... (CTRL+C pressed)\n Exits...')
+        logger.info('Quitting... (CTRL+C pressed)\n Exits...')
     except Exception:  # Catch-all for unexpected exceptions, with stack trace
-        logging.exception(f'Unhandled exception occurred!\n Aborting...')
+        logger.exception(f'Unhandled exception occurred!\n Aborting...')
     finally:
         client.disconnect()
         bot.close()
-        # db_obj.close_connection()
+        # db_connector.close_connection()
         sys.exit(0)

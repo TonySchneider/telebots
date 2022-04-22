@@ -1,20 +1,11 @@
-import os
-import sys
-import time
-import random
-import telebot
-import logging
-from threading import Thread, Lock
-from googletrans import Translator
-from wrappers.db_wrapper import DBWrapper
-from wrappers.requets_wrapper import RequestWrapper
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-
-import logging
 from typing import Union, Optional, List
-
 from telebot import TeleBot, types
 from telebot.async_telebot import REPLY_MARKUP_TYPES
+
+from helpers.loggers import get_logger
+from wrappers.requets_wrapper import RequestWrapper
+
+logger = get_logger(__name__)
 
 
 class BaseTelebotExtension(TeleBot):
@@ -35,7 +26,7 @@ class BaseTelebotExtension(TeleBot):
             allow_sending_without_reply: Optional[bool] = None,
             reply_markup: Optional[REPLY_MARKUP_TYPES] = None,
             timeout: Optional[int] = None) -> types.Message:
-        logging.debug(f"sending message to '{chat_id}'. (text- '{text}')")
+        logger.debug(f"sending message to '{chat_id}'. (text- '{text}')")
 
         msg_obj = super().send_message(chat_id, text, reply_markup=reply_markup)
         self.MESSAGES.append(msg_obj.message_id)

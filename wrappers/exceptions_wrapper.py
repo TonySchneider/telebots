@@ -1,4 +1,6 @@
-import logging
+from helpers.loggers import get_logger
+
+logger = get_logger(__name__)
 
 
 class ExceptionDecorator(object):
@@ -18,7 +20,7 @@ class ExceptionDecorator(object):
             try:
                 return func(*args, **kwargs)
             except tuple(self.tuple_of_exceptions) as e:
-                logging.error(f"{error_message}. Exception - {type(e)}")
-                logging.error(f"Exception message : {e}")
+                logger.error(f"{error_message}. Exception - {type(e)}")
+                logger.error(f"Exception message : {e}")
                 return False
         return inner_func

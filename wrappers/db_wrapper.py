@@ -5,11 +5,15 @@ __author__ = 'Tony Schneider'
 __email__ = 'tonysch05@gmail.com'
 
 import sys
-import logging
 from retry import retry
+from typing import List, Dict
 from mysql.connector import Error as MySQLError
 from mysql.connector import connect as MySQLConnection
+
+from helpers.loggers import get_logger
 from wrappers.exceptions_wrapper import ExceptionDecorator
+
+logger = get_logger(__name__)
 
 
 class DBWrapper:
@@ -39,7 +43,7 @@ class DBWrapper:
         try:
             self.mysql_connector = MySQLConnection(**self._config)
         except MySQLError as e:
-            logging.error(f"There was an issue with mysql connection - '{e}'")
+            logger.error(f"There was an issue with mysql connection - '{e}'")
 
     def commit(self):
         self.mysql_connector.commit()
@@ -52,7 +56,7 @@ class DBWrapper:
     def execute_command(self, command: str):
         output = True
         self.create_connection()
-        logging.debug(f"MySQL: executes '{command}' command")
+        logger.debug(f"MySQL: executes '{command}' command")
 
         self.mysql_cursor = self.mysql_connector.cursor(buffered=True, dictionary=True)
         self.mysql_cursor.execute(command)
@@ -68,6 +72,16 @@ class DBWrapper:
         add_row_command = f"INSERT INTO {table_name} ({fields}) VALUES({values})"
 
         return self.execute_command(add_row_command)
+
+    def insert_multiple_rows(self, table_name: str, keys_values: List[Dict]):
+        fields = ",".join(keys_values[0].keys())
+        values = []
+        for row in keys_values:
+            values.append('(' + ','.join([f'"{value}"' for value in row.values()]) + ')')
+
+        add_rows_command = f"INSERT INTO {table_name} ({fields}) VALUES {','.join(values)}"
+
+        return self.execute_command(add_rows_command)
 
     def update_field(self, table_name: str, field: str, value, condition_field: str, condition_value):
         update_field_command = f"UPDATE {table_name} SET {field} = '{value}' WHERE {condition_field}='{condition_value}'"

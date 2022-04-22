@@ -1,10 +1,12 @@
 import ssl
-
-import requests
 import json
-import logging
-from typing import Union
+import requests
 from retry import retry
+from typing import Union
+
+from helpers.loggers import get_logger
+
+logger = get_logger(__name__)
 
 
 class RequestWrapper:
@@ -47,6 +49,6 @@ class RequestWrapper:
             parsed_response = json.loads(content) if content else {}
             self.status_code = response.status_code
         except Exception:
-            logging.exception(f"There was a connection error with '{url}' request API | params - '{params}'.")
+            logger.exception(f"There was a connection error with '{url}' request API | params - '{params}'.")
 
         return parsed_response
