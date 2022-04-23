@@ -27,9 +27,9 @@ def handle_query(call):
     chat_id = call.message.chat.id
     current_user: "EnglishBotUser" = EnglishBotUser.get_user_by_chat_id(chat_id)
 
-    if not current_user.is_locked():
-        data = call.data
-        if data.startswith("menu:"):
+    data = call.data
+    if data.startswith("menu:"):
+        if not current_user.is_locked():
             button_id = data.replace('menu:', '')
             if button_id == '1':
                 bot.pause_user_word_sender(chat_id)
@@ -59,28 +59,28 @@ def handle_query(call):
             elif button_id == '5':
                 bot.send_message(chat_id, 'מה אתה צריך????!!')
 
-        elif data.startswith("compare:"):
-            logger.debug(f"comparison words for '{chat_id}'")
+    elif data.startswith("compare:"):
+        logger.debug(f"comparison words for '{chat_id}'")
 
-            button_callback = data.replace('compare:', '')
-            en_word, he_word, chosen_he_word = button_callback.split('|')
-            if he_word == chosen_he_word:
-                bot.send_message(chat_id, 'נכון, כל הכבוד!')
-            else:
-                bot.send_message(chat_id, f'טעות, התרגום של המילה {en_word} זה "{he_word}"')
+        button_callback = data.replace('compare:', '')
+        en_word, he_word, chosen_he_word = button_callback.split('|')
+        if he_word == chosen_he_word:
+            bot.send_message(chat_id, 'נכון, כל הכבוד!')
+        else:
+            bot.send_message(chat_id, f'טעות, התרגום של המילה {en_word} זה "{he_word}"')
 
-            bot.show_menu(chat_id)
-            bot.resume_user_word_sender(chat_id)
+        bot.show_menu(chat_id)
+        bot.resume_user_word_sender(chat_id)
 
-        elif data.startswith("delete_word:"):
-            button_callback = data.replace('delete_word:', '')
-            bot.delete_word(chat_id, button_callback)
+    elif data.startswith("delete_word:"):
+        button_callback = data.replace('delete_word:', '')
+        bot.delete_word(chat_id, button_callback)
 
-            bot.show_wordlist(chat_id)
+        bot.show_wordlist(chat_id)
 
-        elif data.startswith("exit"):
-            bot.show_menu(chat_id)
-            bot.resume_user_word_sender(chat_id)
+    elif data.startswith("exit"):
+        bot.show_menu(chat_id)
+        bot.resume_user_word_sender(chat_id)
 
 
 @bot.message_handler(commands=['start'])

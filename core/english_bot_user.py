@@ -1,3 +1,5 @@
+import time
+
 from helpers.loggers import get_logger
 from core.word_sender import WordSender
 
@@ -28,6 +30,21 @@ class EnglishBotUser:
 
         EnglishBotUser.active_users[chat_id] = self
 
+    def new_words_worker(self):
+        while True:
+            with self.word_sender.pause_cond:
+                while self.word_sender.paused:
+                    self.word_sender.pause_cond.wait()
+
+                if self.word_sender.is_stopped:
+                    logger.debug(f"The word sender of chat id '{self.chat_id}' was stopped")
+                    break
+
+                self.global_bot.send_new_word(self.chat_id)
+
+            logger.debug(f"WordSender | Sleeping {self.delay_time * 60} minutes")
+            time.sleep(self.delay_time * 60)
+
     def is_locked(self):
         return self.word_sender.paused if self.word_sender else False
 
@@ -36,13 +53,14 @@ class EnglishBotUser:
 
         self.word_sender = WordSender(chat_id=self.chat_id,
                                       delay_time=self.delay_time,
-                                      global_bot=self.global_bot)
+                                      target=self.new_words_worker)
         self.word_sender.start()
 
         # TODO: change the following to celery task
-        self.db_connector.update_field(table_name='users', field='auto_send_active', condition_field='chat_id',
-                                       condition_value=self.chat_id, value=True)
-        self.word_sender_active = True
+        if not self.word_sender_active:
+            self.db_connector.update_field(table_name='users', field='auto_send_active', condition_field='chat_id',
+                                           condition_value=self.chat_id, value=True)
+            self.word_sender_active = True
 
     def pause_sender(self):
         logger.debug(f"Pausing word sender (chat_id={self.chat_id})")
@@ -103,4 +121,4 @@ class EnglishBotUser:
 
     def close(self):
         if self.word_sender:
-            self.deactivate_word_sender()
+            self.word_sender.stop()

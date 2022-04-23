@@ -42,8 +42,9 @@ class BaseTelebotExtension(TeleBot):
                 try:
                     self.delete_message(chat_id=chat_id, message_id=message_id)
                     self.MESSAGES.remove(message_id)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning(f"Didn't manage to delete message {message_id} id. Error (debug level):")
+                    logger.debug(e.__str__())
 
             assert chat_history
             assert hasattr(chat_history, 'result')
@@ -53,8 +54,9 @@ class BaseTelebotExtension(TeleBot):
             for message_id in [message['message']['message_id'] for message in chat_history['result']]:
                 try:
                     self.delete_message(chat_id=chat_id, message_id=message_id)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning(f"clean_chat second cleaning | Didn't manage to delete message {message_id} id. Error (debug level):")
+                    logger.debug(e.__str__())
 
         except AssertionError:
             pass
