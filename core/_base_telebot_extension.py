@@ -26,37 +26,27 @@ class BaseTelebotExtension(TeleBot):
             allow_sending_without_reply: Optional[bool] = None,
             reply_markup: Optional[REPLY_MARKUP_TYPES] = None,
             timeout: Optional[int] = None) -> types.Message:
-        logger.debug(f"sending message to '{chat_id}'. (text- '{text}')")
+        logger.debug(f"Sending message to '{chat_id}'. (text- '{text}')")
 
         msg_obj = super().send_message(chat_id, text, reply_markup=reply_markup)
+
+        logger.debug(f"Storing message that was sent. id - {msg_obj.message_id}")
         self.MESSAGES.append(msg_obj.message_id)
         return msg_obj
 
     def clean_chat(self, chat_id):
-        request_obj = RequestWrapper()
-
-        chat_history = request_obj.perform_request(url=f"https://api.telegram.org/bot{self.token}/getUpdates?chat_id={chat_id}")
+        logger.debug(f"Cleaning chat {chat_id}")
 
         try:
-            for message_id in self.MESSAGES:
+            while self.MESSAGES:
+                msg_id = self.MESSAGES.pop(0)
+
                 try:
-                    self.delete_message(chat_id=chat_id, message_id=message_id)
-                    self.MESSAGES.remove(message_id)
+                    logger.debug(f"Deleting message id - '{msg_id}'")
+                    self.delete_message(chat_id=chat_id, message_id=msg_id)
                 except Exception as e:
-                    logger.warning(f"Didn't manage to delete message {message_id} id. Error (debug level):")
+                    logger.warning(f"Didn't manage to delete message {msg_id} id. Error (debug level):")
                     logger.debug(e.__str__())
 
-            assert chat_history
-            assert hasattr(chat_history, 'result')
-            assert all(hasattr(message, 'message') for message in chat_history['result'])
-            assert all(hasattr(message['message'], 'message_id') for message in chat_history['result'])
-
-            for message_id in [message['message']['message_id'] for message in chat_history['result']]:
-                try:
-                    self.delete_message(chat_id=chat_id, message_id=message_id)
-                except Exception as e:
-                    logger.warning(f"clean_chat second cleaning | Didn't manage to delete message {message_id} id. Error (debug level):")
-                    logger.debug(e.__str__())
-
-        except AssertionError:
-            pass
+        except AssertionError as e:
+            logger.warning(f"Second Cleaning | assertion error - {e.__str__()}")

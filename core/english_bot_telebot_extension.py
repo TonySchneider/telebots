@@ -1,10 +1,9 @@
 import random
 from typing import Mapping
-from googletrans import Translator
 
 from helpers.loggers import get_logger
 from core.english_bot_user import EnglishBotUser
-# from helpers.trenslations import get_translations
+from helpers.trenslations import get_translations
 from core._base_telebot_extension import BaseTelebotExtension
 
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -37,7 +36,7 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
         for option in options:
             reply_markup.row(option)
 
-        # clean_chat(chat_id)
+        self.clean_chat(chat_id)
         self.send_message(chat_id, "תפריט", reply_markup=reply_markup)
 
     def show_wordlist(self, chat_id):
@@ -61,30 +60,9 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
         self.clean_chat(chat_id)
         self.send_message(chat_id, "רשימת המילים שלך:", reply_markup=reply_markup)
 
-    def get_translations(self, word):
-        translator = Translator()
-        trans_obj = translator.translate(word, dest='he')
-
-        all_translations = trans_obj.extra_data['all-translations']
-        if not all_translations:
-            return [trans_obj.text] if hasattr(trans_obj, 'text') else None
-
-        return_in_hebrew_list = []
-
-        for translation in all_translations:
-            current_list = translation[2]
-            for trans in current_list:
-                if any(isinstance(obj, float) for obj in trans):
-                    return_in_hebrew_list.append(trans[0])
-
-        if not return_in_hebrew_list:
-            for translation in all_translations:
-                current_list = translation[2]
-                return_in_hebrew_list.append(current_list[0][0])
-
-        return return_in_hebrew_list
-
     def add_new_word_to_db(self, message):
+        self.MESSAGES.append(message.message_id)
+
         chat_id = message.chat.id
         user = EnglishBotUser.get_user_by_chat_id(chat_id)
         new_word = message.text.lower()
@@ -98,7 +76,7 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
             return
 
         translations = [{'en_word': new_word, 'he_word': translation,
-                         'chat_id': chat_id} for translation in self.get_translations(new_word)]
+                         'chat_id': chat_id} for translation in get_translations(new_word)]
         if not translations:
             self.send_message(chat_id, 'המערכת לא הצליחה למצוא תרגום למילה המבוקשת')
             return
@@ -111,8 +89,11 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
             self.send_message(chat_id, 'המערכת לא הצליחה להוסיף את המילה המבוקשת, שאל את המפתחים')
 
         self.show_menu(chat_id)
+        self.resume_user_word_sender(chat_id)
 
     def change_waiting_time(self, message):
+        self.MESSAGES.append(message.message_id)
+
         chat_id = message.chat.id
         user = EnglishBotUser.get_user_by_chat_id(chat_id)
 
@@ -122,7 +103,9 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
         try:
             assert new_time, "The object is empty"
             assert new_time.isnumeric(), "The object is not numeric"
-            assert int(new_time) <= 24 * 60, "The number is more than 24 hours"
+
+            new_time = int(new_time)
+            assert new_time <= 24 * 60, "The number is more than 24 hours"
 
             update_status = user.update_delay_time(new_time)
             if update_status:
@@ -205,5 +188,8 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
         active_users[chat_id].resume_sender()
 
     def close(self):
+        # TODO: check regarding the stop forcing
+
         for chat_id, active_user in EnglishBotUser.active_users.items():
             active_user.close()
+            self.clean_chat(chat_id)

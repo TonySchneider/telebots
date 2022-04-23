@@ -1,7 +1,7 @@
 import sys
 import logging
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s | %(levelname)-10s | %(message)s', stream=sys.stdout)
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s | %(levelname)s | %(name)s | %(message)s', stream=sys.stdout)
 
 
 def get_logger(logger_name):

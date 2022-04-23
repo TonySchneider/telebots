@@ -32,18 +32,23 @@ class EnglishBotUser:
 
     def new_words_worker(self):
         while True:
-            with self.word_sender.pause_cond:
-                while self.word_sender.paused:
-                    self.word_sender.pause_cond.wait()
+            try:
+                with self.word_sender.pause_cond:
+                    while self.word_sender.paused:
+                        self.word_sender.pause_cond.wait()
 
-                if self.word_sender.is_stopped:
-                    logger.debug(f"The word sender of chat id '{self.chat_id}' was stopped")
-                    break
+                    if self.word_sender.is_stopped:
+                        logger.debug(f"The word sender of chat id '{self.chat_id}' was stopped")
+                        break
+                    self.global_bot.send_new_word(self.chat_id)
 
-                self.global_bot.send_new_word(self.chat_id)
-
-            logger.debug(f"WordSender | Sleeping {self.delay_time * 60} minutes")
-            time.sleep(self.delay_time * 60)
+                logger.debug(f"WordSender | Sleeping {self.delay_time} minutes")
+                time.sleep(self.delay_time * 60)
+            except KeyError:
+                logger.error(f"TODO: Word sender | KeyError Exception Skipped. chat id - {self.chat_id}")
+            except Exception as e:
+                logger.error(f"Word sender | Exception - {e}")
+                self.global_bot.send_message(chat_id=self.chat_id, text='מערכת שליחת התרגילים קרסה, אנא פנה למפתחים')
 
     def is_locked(self):
         return self.word_sender.paused if self.word_sender else False

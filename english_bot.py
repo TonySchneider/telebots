@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 
 from helpers.loggers import get_logger
 from wrappers.db_wrapper import DBWrapper
@@ -68,6 +69,7 @@ def handle_query(call):
             bot.send_message(chat_id, 'נכון, כל הכבוד!')
         else:
             bot.send_message(chat_id, f'טעות, התרגום של המילה {en_word} זה "{he_word}"')
+            time.sleep(5)
 
         bot.show_menu(chat_id)
         bot.resume_user_word_sender(chat_id)
@@ -85,6 +87,8 @@ def handle_query(call):
 
 @bot.message_handler(commands=['start'])
 def start_the_bot(message):
+    bot.MESSAGES.append(message.message_id)
+
     bot.show_menu(message.chat.id)
     bot.send_message(message.chat.id, 'אנא הוסף לפחות 4 מילים על מנת שהמערכת תוכל להתחיל לשלוח מילים בצורה אוטומטית')
 
@@ -93,6 +97,8 @@ def start_the_bot(message):
 
 @bot.message_handler(func=lambda message: message.text in ['שלח-מילה', '/send'])
 def new_word_command(message):
+    bot.MESSAGES.append(message.message_id)
+
     current_user = EnglishBotUser.get_user_by_chat_id(message.chat.id)
 
     if not current_user.is_locked():
@@ -101,10 +107,18 @@ def new_word_command(message):
 
 @bot.message_handler(func=lambda message: message.text in ['תפריט', '/menu'])
 def new_word_command(message):
+    bot.MESSAGES.append(message.message_id)
+
     current_user = EnglishBotUser.get_user_by_chat_id(message.chat.id)
 
     if not current_user.is_locked():
         bot.show_menu(message.chat.id)
+
+
+@bot.message_handler(func=lambda message: message.text)
+def catch_every_user_message(message):
+    logger.debug(f"catching user message ({message.text})")
+    bot.MESSAGES.append(message.message_id)
 
 
 if __name__ == '__main__':
