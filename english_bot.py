@@ -34,6 +34,7 @@ def handle_query(call):
             button_id = data.replace('menu:', '')
             if button_id == '1':
                 bot.pause_user_word_sender(chat_id)
+                bot.clean_chat(chat_id)
 
                 callback_msg = bot.send_message(chat_id, 'שלח את המילה החדשה')
                 bot.register_next_step_handler(callback_msg, bot.add_new_word_to_db)
@@ -65,8 +66,11 @@ def handle_query(call):
 
         button_callback = data.replace('compare:', '')
         en_word, he_word, chosen_he_word = button_callback.split('|')
+
+        bot.clean_chat(chat_id)
         if he_word == chosen_he_word:
-            bot.send_message(chat_id, 'נכון, כל הכבוד!')
+            bot.send_message(chat_id, f'נכון, כל הכבוד. המילה הבאה תישלח בעוד {current_user.delay_time} דקות')
+            time.sleep(1)
         else:
             bot.send_message(chat_id, f'טעות, התרגום של המילה {en_word} זה "{he_word}"')
             time.sleep(5)
@@ -81,25 +85,37 @@ def handle_query(call):
         bot.show_wordlist(chat_id)
 
     elif data.startswith("exit"):
+        bot.clean_chat(chat_id)
+
         bot.show_menu(chat_id)
         bot.resume_user_word_sender(chat_id)
 
 
 @bot.message_handler(commands=['start'])
 def start_the_bot(message):
-    bot.MESSAGES.append(message.message_id)
+    chat_id = message.chat.id
+    current_user: "EnglishBotUser" = EnglishBotUser.get_user_by_chat_id(chat_id)
 
-    bot.show_menu(message.chat.id)
-    bot.send_message(message.chat.id, 'אנא הוסף לפחות 4 מילים על מנת שהמערכת תוכל להתחיל לשלוח מילים בצורה אוטומטית')
+    if current_user:
+        current_user.messages.append(message.message_id)
+        bot.show_menu(chat_id)
+    else:
+        EnglishBotUser(chat_id=chat_id,
+                       db_connector=db_connector,
+                       global_bot=bot)
+        db_connector.insert_row(table_name='users', keys_values={'chat_id': chat_id})
 
-    db_connector.insert_row(table_name='users', keys_values={'chat_id': message.chat.id})
+        bot.show_menu(chat_id)
+        bot.send_message(chat_id, 'אנא הוסף לפחות 4 מילים על מנת שהמערכת תוכל להתחיל לשלוח מילים בצורה אוטומטית')
 
 
 @bot.message_handler(func=lambda message: message.text in ['שלח-מילה', '/send'])
 def new_word_command(message):
-    bot.MESSAGES.append(message.message_id)
+    chat_id = message.chat.id
+    current_user: "EnglishBotUser" = EnglishBotUser.get_user_by_chat_id(chat_id)
 
-    current_user = EnglishBotUser.get_user_by_chat_id(message.chat.id)
+    if current_user:
+        current_user.messages.append(message.message_id)
 
     if not current_user.is_locked():
         bot.send_new_word(message.chat.id)
@@ -107,9 +123,11 @@ def new_word_command(message):
 
 @bot.message_handler(func=lambda message: message.text in ['תפריט', '/menu'])
 def new_word_command(message):
-    bot.MESSAGES.append(message.message_id)
+    chat_id = message.chat.id
+    current_user: "EnglishBotUser" = EnglishBotUser.get_user_by_chat_id(chat_id)
 
-    current_user = EnglishBotUser.get_user_by_chat_id(message.chat.id)
+    if current_user:
+        current_user.messages.append(message.message_id)
 
     if not current_user.is_locked():
         bot.show_menu(message.chat.id)
@@ -118,7 +136,11 @@ def new_word_command(message):
 @bot.message_handler(func=lambda message: message.text)
 def catch_every_user_message(message):
     logger.debug(f"catching user message ({message.text})")
-    bot.MESSAGES.append(message.message_id)
+    chat_id = message.chat.id
+    current_user: "EnglishBotUser" = EnglishBotUser.get_user_by_chat_id(chat_id)
+
+    if current_user:
+        current_user.messages.append(message.message_id)
 
 
 if __name__ == '__main__':

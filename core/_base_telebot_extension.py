@@ -1,15 +1,14 @@
-from typing import Union, Optional, List
 from telebot import TeleBot, types
+from typing import Union, Optional, List
 from telebot.async_telebot import REPLY_MARKUP_TYPES
 
 from helpers.loggers import get_logger
-from wrappers.requets_wrapper import RequestWrapper
+from core.english_bot_user import EnglishBotUser
 
 logger = get_logger(__name__)
 
 
 class BaseTelebotExtension(TeleBot):
-    MESSAGES = []
 
     def __init__(self, token: str):
         super().__init__(token)
@@ -31,15 +30,19 @@ class BaseTelebotExtension(TeleBot):
         msg_obj = super().send_message(chat_id, text, reply_markup=reply_markup)
 
         logger.debug(f"Storing message that was sent. id - {msg_obj.message_id}")
-        self.MESSAGES.append(msg_obj.message_id)
+
+        user = EnglishBotUser.get_user_by_chat_id(chat_id)
+        user.messages.append(msg_obj.message_id)
+
         return msg_obj
 
     def clean_chat(self, chat_id):
         logger.debug(f"Cleaning chat {chat_id}")
+        user = EnglishBotUser.get_user_by_chat_id(chat_id)
 
         try:
-            while self.MESSAGES:
-                msg_id = self.MESSAGES.pop(0)
+            while user.messages:
+                msg_id = user.messages.pop(0)
 
                 try:
                     logger.debug(f"Deleting message id - '{msg_id}'")

@@ -11,10 +11,10 @@ class EnglishBotUser:
 
     @staticmethod
     def get_user_by_chat_id(chat_id: int):
-        return EnglishBotUser.active_users[chat_id]
+        return EnglishBotUser.active_users.get(chat_id)
 
-    def __init__(self, chat_id: int, word_sender_active: bool, delay_time: int, num_of_words: int,
-                 user_translations: list, db_connector, global_bot):
+    def __init__(self, chat_id: int, db_connector, global_bot, word_sender_active: bool = False, delay_time: int = 20, num_of_words: int = 0,
+                 user_translations: list = None):
         self.chat_id = chat_id
         self.word_sender = None
         self.messages = []
@@ -22,11 +22,8 @@ class EnglishBotUser:
         self.global_bot = global_bot
         self.delay_time = delay_time
         self.num_of_words = num_of_words
-        self.user_translations = user_translations
+        self.user_translations = user_translations if user_translations else []
         self.db_connector = db_connector
-
-        if self.word_sender_active:
-            self.activate_word_sender()
 
         EnglishBotUser.active_users[chat_id] = self
 
@@ -49,6 +46,7 @@ class EnglishBotUser:
             except Exception as e:
                 logger.error(f"Word sender | Exception - {e}")
                 self.global_bot.send_message(chat_id=self.chat_id, text='מערכת שליחת התרגילים קרסה, אנא פנה למפתחים')
+                return
 
     def is_locked(self):
         return self.word_sender.paused if self.word_sender else False
@@ -121,6 +119,7 @@ class EnglishBotUser:
 
         if insertion_status:
             self.user_translations += translations
+            self.num_of_words += 1
 
         return insertion_status
 

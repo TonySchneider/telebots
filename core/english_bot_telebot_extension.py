@@ -12,7 +12,6 @@ logger = get_logger(__name__)
 
 
 class EnglishBotTelebotExtension(BaseTelebotExtension):
-    MESSAGES: list
 
     def __init__(self, token: str):
         super(EnglishBotTelebotExtension, self).__init__(token)
@@ -36,7 +35,6 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
         for option in options:
             reply_markup.row(option)
 
-        self.clean_chat(chat_id)
         self.send_message(chat_id, "תפריט", reply_markup=reply_markup)
 
     def show_wordlist(self, chat_id):
@@ -57,14 +55,13 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
 
         reply_markup.row(InlineKeyboardButton("חזרה לתפריט הראשי", callback_data=f'exit'))
 
-        self.clean_chat(chat_id)
         self.send_message(chat_id, "רשימת המילים שלך:", reply_markup=reply_markup)
 
     def add_new_word_to_db(self, message):
-        self.MESSAGES.append(message.message_id)
-
         chat_id = message.chat.id
         user = EnglishBotUser.get_user_by_chat_id(chat_id)
+        user.messages.append(message.message_id)
+
         new_word = message.text.lower()
 
         try:
@@ -83,8 +80,11 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
 
         insertion_status = user.update_translations(translations)
 
+        self.clean_chat(chat_id)
+
         if insertion_status:
-            self.send_message(chat_id, f'המילה {new_word} נוספה בהצלחה')
+            he_words = ", ".join([item['he_word'] for item in translations])
+            self.send_message(chat_id, f'המילה {new_word} נוספה בהצלחה. תרגרם המילה: {he_words}')
         else:
             self.send_message(chat_id, 'המערכת לא הצליחה להוסיף את המילה המבוקשת, שאל את המפתחים')
 
@@ -92,10 +92,9 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
         self.resume_user_word_sender(chat_id)
 
     def change_waiting_time(self, message):
-        self.MESSAGES.append(message.message_id)
-
         chat_id = message.chat.id
         user = EnglishBotUser.get_user_by_chat_id(chat_id)
+        user.messages.append(message.message_id)
 
         new_time = message.text
         logger.debug(f"Changing time to '{new_time}'. | chat_id - '{chat_id}'")
@@ -107,6 +106,7 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
             new_time = int(new_time)
             assert new_time <= 24 * 60, "The number is more than 24 hours"
 
+            self.clean_chat(chat_id)
             update_status = user.update_delay_time(new_time)
             if update_status:
                 self.send_message(chat_id, f'זמן ההמתנה שונה ל-{new_time} דקות')
@@ -164,6 +164,7 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
 
         delete_status = user.delete_word(en_word)
 
+        self.clean_chat(chat_id)
         if delete_status:
             self.send_message(chat_id, f"המילה {en_word} נמחקה בהצלחה")
             if user.word_sender_active and user.num_of_words < 4:
@@ -173,6 +174,13 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
             self.send_message(chat_id, "המערכת נתקלה בתקלה, המילה המבוקשת לא נמחקה.")
 
     def polling(self, **kwargs):
+        active_users: "Mapping[int, EnglishBotUser]" = EnglishBotUser.active_users
+
+        logger.debug("Activating users...")
+        for chat_id, active_user in active_users.items():
+            if active_user.word_sender_active:
+                active_user.activate_word_sender()
+
         super().polling(**kwargs)
 
     @staticmethod
