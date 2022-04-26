@@ -61,18 +61,18 @@ def handle_query(call):
             elif button_id == '5':
                 bot.send_message(chat_id, 'מה אתה צריך????!!')
 
-    elif data.startswith("compare:"):
+    elif data.startswith("c:"):
         logger.debug(f"comparison words for '{chat_id}'")
 
-        button_callback = data.replace('compare:', '')
-        en_word, he_word, chosen_he_word = button_callback.split('|')
+        button_callback = data.replace('c:', '')
+        he_word, chosen_he_word = button_callback.split('|')
 
         bot.clean_chat(chat_id)
         if he_word == chosen_he_word:
             bot.send_message(chat_id, f'נכון, כל הכבוד. המילה הבאה תישלח בעוד {current_user.delay_time} דקות')
             time.sleep(1)
         else:
-            bot.send_message(chat_id, f'טעות, התרגום של המילה {en_word} זה "{he_word}"')
+            bot.send_message(chat_id, f'טעות, התרגום הנכון זה - "{he_word}"')
             time.sleep(5)
 
         bot.show_menu(chat_id)

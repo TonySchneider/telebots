@@ -84,7 +84,7 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
 
         if insertion_status:
             he_words = ", ".join([item['he_word'] for item in translations])
-            self.send_message(chat_id, f'המילה {new_word} נוספה בהצלחה. תרגרם המילה: {he_words}')
+            self.send_message(chat_id, f'המילה {new_word} נוספה בהצלחה. תרגום המילה: {he_words}')
         else:
             self.send_message(chat_id, 'המערכת לא הצליחה להוסיף את המילה המבוקשת, שאל את המפתחים')
 
@@ -148,7 +148,7 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
 
         reply_markup = InlineKeyboardMarkup()
         options = [InlineKeyboardButton(button_he_word,
-                                        callback_data=f'compare:{chosen_en_word}|{chosen_he_word}|{button_he_word}') for
+                                        callback_data=f'c:{chosen_he_word}|{button_he_word}') for
                    button_he_word in random_he_words]
 
         for option in options:
