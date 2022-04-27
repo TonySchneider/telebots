@@ -82,6 +82,8 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
 
         self.clean_chat(chat_id)
 
+        # TODO: check if the word is already exists in the list. if yes, the user should get a message accordingly.
+
         if insertion_status:
             he_words = ", ".join([item['he_word'] for item in translations])
             self.send_message(chat_id, f'המילה {new_word} נוספה בהצלחה. תרגום המילה: {he_words}')

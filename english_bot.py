@@ -11,13 +11,14 @@ logger = get_logger(__name__)
 
 try:
     TOKEN = os.environ["TONY_ENGLISH_BOT_TOKEN"]
+    MYSQL_HOST = os.environ["MYSQL_HOST"]
     MYSQL_USER = os.environ["MYSQL_USER"]
     MYSQL_PASS = os.environ["MYSQL_PASS"]
 except KeyError:
     logger.error("Please set the environment variables: MYSQL_USER, MYSQL_PASS, TONY_ENGLISH_BOT_TOKEN")
     sys.exit(1)
 
-db_connector = DBWrapper(host='176.58.99.61', mysql_user=MYSQL_USER, mysql_pass=MYSQL_PASS, database='english_bot')
+db_connector = DBWrapper(host=MYSQL_HOST, mysql_user=MYSQL_USER, mysql_pass=MYSQL_PASS, database='english_bot')
 bot = EnglishBotTelebotExtension(TOKEN)
 
 active_users = {}
@@ -30,8 +31,8 @@ def handle_query(call):
 
     data = call.data
     if data.startswith("menu:"):
+        button_id = data.replace('menu:', '')
         if not current_user.is_locked():
-            button_id = data.replace('menu:', '')
             if button_id == '1':
                 bot.pause_user_word_sender(chat_id)
                 bot.clean_chat(chat_id)
@@ -60,6 +61,8 @@ def handle_query(call):
                 bot.register_next_step_handler(callback_msg, bot.change_waiting_time)
             elif button_id == '5':
                 bot.send_message(chat_id, 'מה אתה צריך????!!')
+        else:
+            logger(f"The user trying to press on button {button_id} but the chat is locked")
 
     elif data.startswith("c:"):
         logger.debug(f"comparison words for '{chat_id}'")

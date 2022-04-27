@@ -24,6 +24,7 @@ class EnglishBotUser:
         self.num_of_words = num_of_words
         self.user_translations = user_translations if user_translations else []
         self.db_connector = db_connector
+        self.word_sender_paused = False
 
         EnglishBotUser.active_users[chat_id] = self
 
@@ -31,7 +32,7 @@ class EnglishBotUser:
         while True:
             try:
                 with self.word_sender.pause_cond:
-                    while self.word_sender.paused:
+                    while self.word_sender_paused:
                         self.word_sender.pause_cond.wait()
 
                     if self.word_sender.is_stopped:
@@ -49,7 +50,7 @@ class EnglishBotUser:
                 return
 
     def is_locked(self):
-        return self.word_sender.paused if self.word_sender else False
+        return self.word_sender_paused
 
     def activate_word_sender(self):
         logger.debug(f"Activating word sender (chat_id={self.chat_id})")
@@ -67,11 +68,15 @@ class EnglishBotUser:
 
     def pause_sender(self):
         logger.debug(f"Pausing word sender (chat_id={self.chat_id})")
+        self.word_sender_paused = True
+
         if self.word_sender:
             self.word_sender.pause()
 
     def resume_sender(self):
         logger.debug(f"Resuming word sender (chat_id={self.chat_id})")
+        self.word_sender_paused = False
+
         if self.word_sender:
             self.word_sender.resume()
 
