@@ -21,7 +21,7 @@ except AssertionError:
     sys.exit(1)
 
 # initial objects
-logger.basicConfig(level=logger.INFO, format='%(asctime)s | %(levelname)-10s | %(message)s', stream=sys.stdout)
+# logger.basicConfig(level=logger.INFO, format='%(asctime)s | %(levelname)-10s | %(message)s', stream=sys.stdout)
 
 
 async def write_dialogs():

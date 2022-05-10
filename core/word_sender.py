@@ -23,8 +23,6 @@ class WordSender(threading.Thread):
     def resume(self):
         # Notify so thread will wake after lock released
         self.pause_cond.notify()
-        # Because notify() wakes up only thread waiting for the condition variable.
-        self.pause_cond.wait()
         # Now release the lock
         self.pause_cond.release()
 

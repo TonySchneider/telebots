@@ -21,8 +21,6 @@ except KeyError:
 db_connector = DBWrapper(host=MYSQL_HOST, mysql_user=MYSQL_USER, mysql_pass=MYSQL_PASS, database='english_bot')
 bot = EnglishBotTelebotExtension(TOKEN)
 
-active_users = {}
-
 
 @bot.callback_query_handler(func=lambda call: True)
 def handle_query(call):

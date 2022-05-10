@@ -30,24 +30,28 @@ class EnglishBotUser:
 
     def new_words_worker(self):
         while True:
-            try:
-                with self.word_sender.pause_cond:
-                    while self.word_sender_paused:
-                        self.word_sender.pause_cond.wait()
+            # try:
+            if not self.word_sender_paused:
+                self.global_bot.send_new_word(self.chat_id)
 
-                    if self.word_sender.is_stopped:
-                        logger.debug(f"The word sender of chat id '{self.chat_id}' was stopped")
-                        break
-                    self.global_bot.send_new_word(self.chat_id)
+            self.pause_sender()
+            while self.word_sender_paused:
+                if self.word_sender.is_stopped:
+                    break
+                time.sleep(1)
 
-                logger.debug(f"WordSender | Sleeping {self.delay_time} minutes")
-                time.sleep(self.delay_time * 60)
-            except KeyError:
-                logger.error(f"TODO: Word sender | KeyError Exception Skipped. chat id - {self.chat_id}")
-            except Exception as e:
-                logger.error(f"Word sender | Exception - {e}")
-                self.global_bot.send_message(chat_id=self.chat_id, text='מערכת שליחת התרגילים קרסה, אנא פנה למפתחים')
-                return
+            if self.word_sender.is_stopped:
+                logger.debug(f"The word sender of chat id '{self.chat_id}' was stopped")
+                break
+
+            logger.debug(f"WordSender | Sleeping {self.delay_time} minutes")
+            time.sleep(self.delay_time * 60)
+            # except KeyError:
+            #     logger.error(f"TODO: Word sender | KeyError Exception Skipped. chat id - {self.chat_id}")
+            # except Exception as e:
+            #     logger.error(f"Word sender | Exception - {e}")
+            #     self.global_bot.send_message(chat_id=self.chat_id, text='מערכת שליחת התרגילים קרסה, אנא פנה למפתחים')
+            #     return
 
     def is_locked(self):
         return self.word_sender_paused
@@ -70,15 +74,15 @@ class EnglishBotUser:
         logger.debug(f"Pausing word sender (chat_id={self.chat_id})")
         self.word_sender_paused = True
 
-        if self.word_sender:
-            self.word_sender.pause()
+        # if self.word_sender:
+        #     self.word_sender.pause()
 
     def resume_sender(self):
         logger.debug(f"Resuming word sender (chat_id={self.chat_id})")
         self.word_sender_paused = False
 
-        if self.word_sender:
-            self.word_sender.resume()
+        # if self.word_sender:
+        #     self.word_sender.resume()
 
     def deactivate_word_sender(self):
         logger.debug(f"Deactivating word sender (chat_id={self.chat_id})")

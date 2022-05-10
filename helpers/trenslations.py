@@ -2,6 +2,14 @@ import re
 from googletrans import Translator
 
 
+def translate_it(text: str, lang_to: str, lang_from: str = ''):
+    translator = Translator()
+    trans_obj = translator.translate(text=text,
+                                     src=lang_from,
+                                     dest=lang_to)
+    return trans_obj.text
+
+
 def get_translations(word):
     translator = Translator()
     trans_obj = translator.translate(word, dest='he')
@@ -27,9 +35,10 @@ def get_translations(word):
     return list(set(return_in_hebrew_list))
 
 
-# if __name__ == '__main__':
-#     trans = get_translations("regardless")
-#     # print(re.sub(r'[^\w\s]', '', trans[0]))
-#     # print(trans[0].translate(str.maketrans('', '', string.punctuation)))
-#
-#     print(trans)
+if __name__ == '__main__':
+    # trans = get_translations("table")
+    # print(re.sub(r'[^\w\s]', '', trans[0]))
+    # print(trans[0].translate(str.maketrans('', '', string.punctuation)))
+
+    tran = translate_it(text="🛑 السيلة الحارثية غرب جنين زنانات واطية..", lang_from="ar", lang_to="he")
+    print(tran)
