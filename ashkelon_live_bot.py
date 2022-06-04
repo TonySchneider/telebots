@@ -25,7 +25,7 @@ try:
 
     TELEGRAM_API_ID = int(TELEGRAM_API_ID)
 except KeyError:
-    logger.error("Please set the environment variables: MYSQL_USER, MYSQL_PASS, TONY_ENGLISH_BOT_TOKEN")
+    logger.error("Please set the environment variables: TELEGRAM_API_ID, TELEGRAM_API_HASH, ASHKELON_NEWS_BOT_TOKEN")
     sys.exit(1)
 except AssertionError:
     logger.error("Please set the environment variables properly")

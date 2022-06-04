@@ -22,7 +22,7 @@ try:
 
     TELEGRAM_API_ID = int(TELEGRAM_API_ID)
 except KeyError:
-    logger.error("Please set the environment variables: MYSQL_USER, MYSQL_PASS, TONY_ENGLISH_BOT_TOKEN")
+    logger.error("Please set the environment variables: TELEGRAM_API_ID, TELEGRAM_API_HASH, ASHKELON_NEWS_BOT_TOKEN")
     sys.exit(1)
 except AssertionError:
     logger.error("Please set the environment variables properly")
@@ -83,7 +83,7 @@ async def send_me_a_message(message_text: str):
 #     send_a_message_via_bot(ts_chat_id, message_text, reply_markup=reply_markup)
 
 
-@client.on(events.NewMessage(chats=(-1001493954148, -1001238669963)))
+@client.on(events.NewMessage(chats=(-1001493954148, -1001238669963, -1001318165547)))
 async def my_event_handler(event):
     global last_message
 
