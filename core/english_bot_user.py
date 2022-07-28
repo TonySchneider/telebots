@@ -3,7 +3,7 @@ import time
 from helpers.loggers import get_logger
 from core.word_sender import WordSender
 
-logger = get_logger(__name__)
+logger = get_logger(__file__)
 
 
 class EnglishBotUser:

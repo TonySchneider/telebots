@@ -1,13 +1,22 @@
 import re
 from googletrans import Translator
+from retry import retry
+
+from helpers.loggers import get_logger
+
+logger = get_logger(__file__)
 
 
-def translate_it(text: str, lang_to: str, lang_from: str = ''):
+@retry(exceptions=(TypeError, AttributeError), tries=5, delay=5, jitter=3)
+def translate_it(text: str, lang_from: str, lang_to: str):
+    translated_text = None
+
     translator = Translator()
     trans_obj = translator.translate(text=text,
                                      src=lang_from,
                                      dest=lang_to)
-    return trans_obj.text
+    translated_text = trans_obj.text
+    return translated_text
 
 
 def get_translations(word):
@@ -33,12 +42,3 @@ def get_translations(word):
         return_in_hebrew_list.append(main_translation)
 
     return list(set(return_in_hebrew_list))
-
-
-if __name__ == '__main__':
-    # trans = get_translations("table")
-    # print(re.sub(r'[^\w\s]', '', trans[0]))
-    # print(trans[0].translate(str.maketrans('', '', string.punctuation)))
-
-    tran = translate_it(text="🛑 السيلة الحارثية غرب جنين زنانات واطية..", lang_from="ar", lang_to="he")
-    print(tran)

@@ -7,7 +7,7 @@ from core.gods_eye_user import GodsEyeUser
 from helpers.loggers import get_logger
 from wrappers.db_wrapper import DBWrapper
 
-logger = get_logger(__name__)
+logger = get_logger(__file__)
 
 try:
     TOKEN = os.environ["GODS_EYE_BOT_TOKEN"]

@@ -6,7 +6,7 @@ from typing import Union
 
 from helpers.loggers import get_logger
 
-logger = get_logger(__name__)
+logger = get_logger(__file__)
 
 
 class RequestWrapper:

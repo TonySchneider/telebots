@@ -7,7 +7,7 @@ from wrappers.db_wrapper import DBWrapper
 from core.english_bot_user import EnglishBotUser
 from core.english_bot_telebot_extension import EnglishBotTelebotExtension
 
-logger = get_logger(__name__)
+logger = get_logger(__file__)
 
 try:
     TOKEN = os.environ["TONY_ENGLISH_BOT_TOKEN"]

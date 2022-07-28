@@ -5,7 +5,7 @@ from telebot.async_telebot import REPLY_MARKUP_TYPES
 from helpers.loggers import get_logger
 from core.english_bot_user import EnglishBotUser
 
-logger = get_logger(__name__)
+logger = get_logger(__file__)
 
 
 class BaseTelebotExtension(TeleBot):

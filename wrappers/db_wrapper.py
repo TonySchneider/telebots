@@ -13,7 +13,7 @@ from mysql.connector import connect as MySQLConnection
 from helpers.loggers import get_logger
 from wrappers.exceptions_wrapper import ExceptionDecorator
 
-logger = get_logger(__name__)
+logger = get_logger(__file__)
 
 
 class DBWrapper:

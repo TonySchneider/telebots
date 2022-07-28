@@ -5,7 +5,7 @@ from telethon import TelegramClient
 
 from helpers.loggers import get_logger
 
-logger = get_logger(__name__)
+logger = get_logger(__file__)
 
 
 try:
@@ -19,9 +19,6 @@ except KeyError:
 except AssertionError:
     logger.error("Please set the environment variables properly")
     sys.exit(1)
-
-# initial objects
-# logger.basicConfig(level=logger.INFO, format='%(asctime)s | %(levelname)-10s | %(message)s', stream=sys.stdout)
 
 
 async def write_dialogs():

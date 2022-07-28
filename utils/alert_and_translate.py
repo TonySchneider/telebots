@@ -1,16 +1,18 @@
 import os
 import sys
 import time
+import uuid
 import telebot
 from typing import Union
 from threading import Thread
+from telethon.tl.patched import Message
 from telethon import TelegramClient, events, errors
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from helpers.loggers import get_logger
 from helpers.trenslations import translate_it
 
-logger = get_logger(__name__)
+logger = get_logger(__file__)
 
 
 try:
@@ -36,68 +38,80 @@ client = TelegramClient('alerts', TELEGRAM_API_ID, TELEGRAM_API_HASH)
 # initial variables
 ts_chat_id = 239169883
 test_group_id = -1001216509728
-last_message = None
+messages = {}
 
 
-# @bot.callback_query_handler(func=lambda call: True)
-# def handle_query(call):
-#     data = call.data
-#     if data.startswith("accept-report:"):
-#         button_id = data.replace('accept-report:', '')
-#         if button_id == '1':
-#             send_a_message_via_bot(test_group_id, last_message)
-#         elif button_id == '2':
-#             pass
-#
-#         send_a_message_via_bot()
-
-
-def send_a_message_via_bot(chat_id: Union[int, str], message_object, reply_markup=None):
+def send_a_message_via_bot(chat_id: Union[int, str], message_object: Union[Message, str], accept_message_id=None, media_path=None, text=None, reply_markup=None):
     """
     This method sends message via bot to the provided chat id
     """
-    if chat_id == 'me':
-        chat_id = ts_chat_id
-    bot.send_message(chat_id, message_object, reply_markup=reply_markup)
+    global messages
+
+    if isinstance(message_object, Message):
+        if media_path and media_path.endswith('.mp4'):
+            logger.info(f"Sending video to chat_id:{chat_id}")
+            sending_status = bot.send_video(chat_id, video=open(media_path, 'rb'), caption=text if text else message_object.text, reply_markup=reply_markup)
+        elif media_path and media_path.endswith('.jpg'):
+            logger.info(f"Sending photo to chat_id:{chat_id}")
+            sending_status = bot.send_photo(chat_id, photo=open(media_path, 'rb'), caption=text if text else message_object.text, reply_markup=reply_markup)
+        else:
+            logger.info(f"Sending text message to chat_id:{chat_id}")
+            sending_status = bot.send_message(chat_id, text if text else message_object.text, reply_markup=reply_markup)
+    else:
+        sending_status = bot.send_message(chat_id, text if text else message_object, reply_markup=reply_markup)
+
+    if sending_status and accept_message_id in messages.keys():
+        logger.debug(f'removing message & downloaded media by id:{accept_message_id} since it already sent')
+
+        if media_path:
+            os.remove(media_path)
+        messages.pop(accept_message_id)
+
+        # bot.delete_message(confirmation_group, message_object.id)
+    return sending_status
 
 
 async def send_me_a_message(message_text: str):
     await client.send_message('me', message=message_text)
 
 
-# def accept_new_report(message_text):
-#     logger.debug("Sending new report to TS chat and ask for acceptation")
-#
-#     menu_buttons = {
-#         '1': 'שלח',
-#         '2': 'בטל'
-#     }
-#
-#     reply_markup = InlineKeyboardMarkup()
-#     options = [InlineKeyboardButton(button_text, callback_data=f'accept-report:{button_id}') for button_id, button_text in
-#                menu_buttons.items()]
-#
-#     for option in options:
-#         reply_markup.row(option)
-#
-#     send_a_message_via_bot(ts_chat_id, message_text, reply_markup=reply_markup)
-
-
 @client.on(events.NewMessage(chats=(-1001493954148, -1001238669963, -1001318165547)))
 async def my_event_handler(event):
-    global last_message
+    global messages
 
-    logger.info('Got message. will send it..')
+    logger.info('Got a message. will send it..')
     sent = False
     while not sent:
         try:
-            logger.debug(f'sending message to {test_group_id}')
-            last_message = event.message
+            message_id = uuid.uuid4().__str__()
+            media_path = None
 
+            logger.debug(f'sending message to {test_group_id}')
+
+            logger.debug(f"Will translate message by id - '{message_id}'")
             translated_text = translate_it(text=event.message.text, lang_from="ar", lang_to="he")
+            if not translated_text:
+                logger.debug(f"Didn't manage to translate message by id - '{message_id}'...")
+                break
+
             translated_text = translated_text.replace('\\', '').replace('t.me/', '')
 
-            send_a_message_via_bot(ts_chat_id, translated_text)
+            if hasattr(event.message, 'video') and event.message.video:
+                media_path = f'temp/{message_id}.mp4'
+            elif hasattr(event.message, 'photo') and event.message.photo:
+                media_path = f'temp/{message_id}.jpg'
+
+            messages[message_id] = {'message_obj': event.message}
+            if media_path:
+                await event.download_media(media_path)
+                messages[message_id]['media_path'] = media_path
+
+            send_a_message_via_bot(chat_id=ts_chat_id,
+                                   message_object=messages[message_id].get('message_obj'),
+                                   accept_message_id=message_id,
+                                   media_path=messages[message_id].get('media_path'),
+                                   text=translated_text)
+            # send_a_message_via_bot(ts_chat_id, translated_text)
             # accept_new_report(event.message.text)
             sent = True
         except errors.rpcerrorlist.FloodWaitError:

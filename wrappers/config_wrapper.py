@@ -1,23 +1,26 @@
+import os
 import sys
 import yaml
+import logging
+import platform
 from pathlib import Path
-
-from helpers.loggers import get_logger
-
-logger = get_logger(__name__)
 
 
 class ConfigWrapper:
+    os_system = platform.system()
 
-    def __init__(self):
+    def __init__(self, ):
         """
         This class loads all our configurations yaml file and saves them as dictionary so we can use them quickly
         without open every time some configuration file.
         """
-        conf_dir = Path('.') / 'configurations'
+
+        conf_dir = os.path.join('.', 'configurations')
+        if not os.path.isdir(conf_dir):
+            conf_dir = '.' + conf_dir
 
         self.file_list = [
-            f for f in conf_dir.iterdir() if f.is_file()
+            f for f in Path(conf_dir).iterdir() if f.is_file()
         ]
         self.all_data = self.parse_all_yaml_files()
 
@@ -33,7 +36,7 @@ class ConfigWrapper:
                 try:
                     all_files_data[file.stem] = yaml.safe_load(stream)
                 except yaml.YAMLError:
-                    logger.exception(
+                    logging.exception(
                         f"There was an issue with {file} file. "
                         f"The system didn't manage to open it. "
                         f"\nAborting..."

@@ -11,8 +11,7 @@ from telethon.tl.patched import Message
 from telethon import TelegramClient, events, errors
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-logger = get_logger(__name__)
-
+logger = get_logger(__file__)
 
 DEV = False
 
@@ -37,9 +36,10 @@ client = TelegramClient('session_name', TELEGRAM_API_ID, TELEGRAM_API_HASH)
 
 # initial variables
 producer_without_confirmation = [-1001436772127]
-producers = [-1001023468930, -1001337442223, -1001307152557, -1001143765178, -1001468698690, -1001406113886, -1001436772127, -1001221122299, 239169883]
-ts_chat_id = 239169883
-test_group_id = -1001216509728
+producers = [-1001023468930, -1001337442223, -1001307152557, -1001143765178, -1001468698690, -1001406113886,
+             -1001436772127, -1001221122299, 239169883, -1001474443960]
+confirmation_group = -1001216509728
+test_group_id = -1001754623712
 prod_group_id = -1001489287278
 messages = {}
 
@@ -57,44 +57,57 @@ async def handle_deletion(message_obj: Message):
 def handle_query(call):
     data = call.data
     if data.startswith("accept-report:"):
+        chat_id = test_group_id if DEV else prod_group_id
+
         button_details = data.replace('accept-report:', '')
         button_id, accept_message_id = button_details.split('|')
-        if button_id == '1':
-            send_a_message_via_bot(chat_id=test_group_id if DEV else prod_group_id,
-                                   message_object=messages[accept_message_id].get('message_obj'),
-                                   accept_message_id=accept_message_id,
-                                   media_path=messages[accept_message_id].get('media_path'))
-        elif button_id == '2':
-            pass
+
+        message_details = messages.get(accept_message_id)
+        if message_details:
+            if button_id == '1':
+                send_a_message_via_bot(chat_id=chat_id,
+                                       message=message_details,
+                                       accept_message_id=accept_message_id)
+            elif button_id == '2':
+                bot.delete_message(chat_id=confirmation_group, message_id=message_details.get('question_message_id'))
 
 
-def send_a_message_via_bot(chat_id: Union[int, str], message_object: Union[Message, str], accept_message_id=None, media_path=None, reply_markup=None):
+def send_a_message_via_bot(chat_id: Union[int, str], message: Union[dict, str], accept_message_id=None,
+                           reply_markup=None) -> int:
     """
     This method sends message via bot to the provided chat id
     """
     global messages
-    if chat_id == 'me':
-        chat_id = ts_chat_id
 
-    if isinstance(message_object, Message):
+    if isinstance(message, dict):
+        media_path = message.get('media_path')
+        message_object = message.get('message_obj')
+
         if media_path and media_path.endswith('.mp4'):
             logger.info(f"Sending video to chat_id:{chat_id}")
-            sending_status = bot.send_video(chat_id, video=open(media_path, 'rb'), caption=message_object.text, reply_markup=reply_markup)
+            sending_status = bot.send_video(chat_id, video=open(media_path, 'rb'), caption=message_object.text,
+                                            reply_markup=reply_markup)
         elif media_path and media_path.endswith('.jpg'):
             logger.info(f"Sending photo to chat_id:{chat_id}")
-            sending_status = bot.send_photo(chat_id, photo=open(media_path, 'rb'), caption=message_object.text, reply_markup=reply_markup)
+            sending_status = bot.send_photo(chat_id, photo=open(media_path, 'rb'), caption=message_object.text,
+                                            reply_markup=reply_markup)
         else:
             logger.info(f"Sending text message to chat_id:{chat_id}")
             sending_status = bot.send_message(chat_id, message_object.text, reply_markup=reply_markup)
-    else:
-        sending_status = bot.send_message(chat_id, message_object, reply_markup=reply_markup)
 
-    if sending_status and accept_message_id in messages.keys():
-        logger.debug(f'removing message by id:{accept_message_id} since it already sent')
-        messages.pop(accept_message_id)
-        # TODO: delete messages
-        # client.delete_messages(test_group_id, message_object.id)
-    return sending_status
+        if sending_status:
+            logger.debug(f'removing message & downloaded media by id:{accept_message_id} since it already sent')
+
+            if media_path:
+                os.remove(media_path)
+
+            if 'question_message_id' in message.keys():
+                messages.pop(accept_message_id)
+                bot.delete_message(chat_id=confirmation_group, message_id=message.get('question_message_id'))
+    else:
+        sending_status = bot.send_message(chat_id, message, reply_markup=reply_markup)
+
+    return sending_status.id
 
 
 async def send_me_a_message(message_text: str):
@@ -105,7 +118,7 @@ async def send_me_a_message(message_text: str):
 async def my_event_handler(event):
     global messages
 
-    if any(word in event.message.text for word in ['ashkelon', 'ashqelon', 'אשקלון']):
+    if any(word in event.message.text for word in ['ashkelon', 'ashqelon', 'אשקלון', 'באר גנים', 'צומת סילבר', 'מבקיעים']):
         logger.info('found message by the ashkelon word. will send it..')
         sent = False
         while not sent:
@@ -120,7 +133,8 @@ async def my_event_handler(event):
                 }
 
                 reply_markup = InlineKeyboardMarkup()
-                options = [InlineKeyboardButton(button_text, callback_data=f'accept-report:{button_id}|{message_id}') for button_id, button_text in
+                options = [InlineKeyboardButton(button_text, callback_data=f'accept-report:{button_id}|{message_id}')
+                           for button_id, button_text in
                            menu_buttons.items()]
 
                 for option in options:
@@ -131,19 +145,23 @@ async def my_event_handler(event):
                 elif hasattr(event.message, 'photo') and event.message.photo:
                     media_path = f'temp/{message_id}.jpg'
 
-                messages[message_id.__str__()] = {'message_obj': event.message}
                 if media_path:
                     await event.download_media(media_path)
-                    messages[message_id.__str__()]['media_path'] = media_path
 
-                if event.message.chat_id in producer_without_confirmation:
-                    send_a_message_via_bot(chat_id=test_group_id,
-                                           message_object=messages[message_id].get('message_obj'),
-                                           accept_message_id=message_id,
-                                           media_path=messages[message_id].get('media_path'))
-                else:
-                    send_a_message_via_bot(ts_chat_id, event.message.text, reply_markup=reply_markup)
+                message = {'message_obj': event.message,
+                           'media_path': media_path}
+                # if event.message.chat_id in producer_without_confirmation:
+                send_a_message_via_bot(chat_id=test_group_id if DEV else prod_group_id,
+                                       message=message,
+                                       accept_message_id=message_id.__str__())
+                # else:
+                #     messages[message_id.__str__()] = message
+                #     question_message_id = send_a_message_via_bot(confirmation_group, event.message.text,
+                #                                                  reply_markup=reply_markup)
+                #     messages[message_id.__str__()]['question_message_id'] = question_message_id
                 sent = True
+                if 'צופר - צבע אדום' in event.message.text:
+                    time.sleep(60)
             except errors.rpcerrorlist.FloodWaitError:
                 print('exception, sleeping 5 seconds...')
                 time.sleep(5)

@@ -8,7 +8,7 @@ from core._base_telebot_extension import BaseTelebotExtension
 
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-logger = get_logger(__name__)
+logger = get_logger(__file__)
 
 
 class EnglishBotTelebotExtension(BaseTelebotExtension):
