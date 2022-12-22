@@ -163,7 +163,7 @@ if __name__ == '__main__':
                            db_connector=db_connector,
                            global_bot=bot)
 
-        bot.polling(none_stop=True)
+        bot.infinity_polling()
     except KeyboardInterrupt:
         logger.info('Quitting... (CTRL+C pressed)\n Exits...')
     except Exception:  # Catch-all for unexpected exceptions, with stack trace

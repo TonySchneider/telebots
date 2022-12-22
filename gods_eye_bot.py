@@ -1,6 +1,5 @@
 import os
 import sys
-import time
 
 from core._base_telebot_extension import BaseTelebotExtension
 from core.gods_eye_user import GodsEyeUser

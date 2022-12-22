@@ -175,7 +175,7 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
         else:
             self.send_message(chat_id, "המערכת נתקלה בתקלה, המילה המבוקשת לא נמחקה.")
 
-    def polling(self, **kwargs):
+    def infinity_polling(self, **kwargs):
         active_users: "Mapping[int, EnglishBotUser]" = EnglishBotUser.active_users
 
         logger.debug("Activating users...")
@@ -183,7 +183,7 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
             if active_user.word_sender_active:
                 active_user.activate_word_sender()
 
-        super().polling(**kwargs)
+        super().infinity_polling(timeout=10, long_polling_timeout=5, **kwargs)
 
     @staticmethod
     def pause_user_word_sender(chat_id):
