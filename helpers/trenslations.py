@@ -42,3 +42,7 @@ def get_translations(word):
         return_in_hebrew_list.append(main_translation)
 
     return list(set(return_in_hebrew_list))
+
+
+if __name__ == '__main__':
+    print(get_translations('corresponds'))

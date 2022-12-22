@@ -64,6 +64,8 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
 
         new_word = message.text.lower()
 
+        logger.debug(f"The provided word - '{new_word}'. Will get translations for this word...")
+
         try:
             assert new_word
             assert new_word.isalpha()
@@ -72,8 +74,11 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
             self.send_message(message.chat.id, 'המילה צריכה להכיל רק אותיות ולהיות לא יותר מ45 תווים')
             return
 
+        extracted_translations = get_translations(new_word)
+        logger.debug(f"Got these translations - '{extracted_translations}' for the word '{new_word}'")
+
         translations = [{'en_word': new_word, 'he_word': translation,
-                         'chat_id': chat_id} for translation in get_translations(new_word)]
+                         'chat_id': chat_id} for translation in extracted_translations]
         if not translations:
             self.send_message(chat_id, 'המערכת לא הצליחה למצוא תרגום למילה המבוקשת')
             return
