@@ -8,7 +8,7 @@ logger = get_logger(__file__)
 
 class WordSender(threading.Thread):
     def __init__(self, chat_id: int, delay_time: int, target=None, args=()):
-        threading.Thread.__init__(self, target=target, args=args)
+        super().__init__(target=target, args=args)
         self.pause_cond = threading.Condition(threading.Lock())
         self.is_stopped = False
         self.chat_id = chat_id

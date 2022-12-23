@@ -1,5 +1,8 @@
-from telebot import TeleBot, types
+from retry import retry
 from typing import Union, Optional, List
+
+from telebot import TeleBot, types
+from telebot.apihelper import ApiTelegramException
 from telebot.async_telebot import REPLY_MARKUP_TYPES
 
 from helpers.loggers import get_logger
@@ -14,6 +17,7 @@ class BaseTelebotExtension(TeleBot):
         super().__init__(token)
         self.token = token
 
+    @retry(exceptions=RuntimeError, tries=3, delay=1)
     def send_message(
             self, chat_id: Union[int, str], text: str,
             parse_mode: Optional[str] = None,
@@ -27,7 +31,12 @@ class BaseTelebotExtension(TeleBot):
             timeout: Optional[int] = None) -> types.Message:
         logger.debug(f"Sending message to '{chat_id}'. (text- '{text}')")
 
-        msg_obj = super().send_message(chat_id, text, reply_markup=reply_markup)
+        msg_obj = None
+        try:
+            msg_obj = super().send_message(chat_id, text, reply_markup=reply_markup)
+        except ApiTelegramException as e:
+            if any([error in e.__str__() for error in ['Bad Request: BUTTON_DATA_INVALID']]):
+                raise RuntimeError(e)
 
         logger.debug(f"Storing message that was sent. id - {msg_obj.message_id}")
 

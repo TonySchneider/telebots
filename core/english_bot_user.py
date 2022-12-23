@@ -30,11 +30,8 @@ class EnglishBotUser:
 
     def new_words_worker(self):
         while True:
-            # try:
-            if not self.word_sender_paused:
-                self.global_bot.send_new_word(self.chat_id)
+            self.global_bot.send_new_word(self.chat_id)
 
-            self.pause_sender()
             while self.word_sender_paused:
                 if self.word_sender.is_stopped:
                     break

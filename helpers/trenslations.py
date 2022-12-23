@@ -45,4 +45,9 @@ def get_translations(word):
 
 
 if __name__ == '__main__':
-    print(get_translations('corresponds'))
+    # print(get_translations('corresponds'))
+
+    sentence = """
+**🛑 الشهيد المجاهد احمد دراغمة ابن مدينة طوباس والذي ارتقى اثناء تصديه لقوات الاحتلال المتوغلة بقبر يوسف في نابلس..
+    """
+    print(translate_it(sentence, lang_from='ar', lang_to='he'))

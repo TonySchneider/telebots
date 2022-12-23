@@ -164,6 +164,7 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
         self.clean_chat(chat_id)
         self.send_message(chat_id, f'בחר את התרגום של {chosen_en_word}', reply_markup=reply_markup)
         logger.debug(f"sent word '{chosen_en_word}' to chat id - '{chat_id}'")
+
         self.pause_user_word_sender(chat_id)
 
     def delete_word(self, chat_id, en_word):
