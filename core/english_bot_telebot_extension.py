@@ -68,7 +68,7 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
 
         try:
             assert new_word
-            assert new_word.isalpha()
+            assert new_word.replace(' ','').isalpha()
             assert len(new_word) < 46
         except AssertionError:
             self.send_message(message.chat.id, 'המילה צריכה להכיל רק אותיות ולהיות לא יותר מ45 תווים')
