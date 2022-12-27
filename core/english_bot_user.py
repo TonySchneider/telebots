@@ -28,6 +28,9 @@ class EnglishBotUser:
 
         EnglishBotUser.active_users[chat_id] = self
 
+    def get_user_sorted_words(self):
+        return sorted(list(set([translate['en_word'] for translate in self.user_translations])))
+
     def new_words_worker(self):
         while True:
             if self.word_sender.is_stopped:

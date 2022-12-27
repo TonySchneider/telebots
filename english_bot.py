@@ -82,7 +82,7 @@ def handle_query(call):
             bot.send_message(chat_id, f'נכון, כל הכבוד.' + prefix)
             time.sleep(1)
         else:
-            bot.send_message(chat_id, f'טעות, התרגום הנכון זה - "{he_word}"' + prefix)
+            bot.send_message(chat_id, f'טעות, התרגום הנכון זה - "{he_word}."' + prefix)
             time.sleep(1)
 
         bot.show_menu(chat_id)
@@ -96,10 +96,10 @@ def handle_query(call):
 
     elif data.startswith("delete_word:"):
         button_callback = data.replace('delete_word:', '')
-        bot.delete_word(chat_id, button_callback)
+        chosen_word, last_menu_range = button_callback.split('|')
+        bot.delete_word(chat_id, chosen_word)
 
-        bot.show_menu(chat_id)
-        bot.resume_user_word_sender(chat_id)
+        bot.show_wordlist(chat_id, eval(last_menu_range))
 
     elif data.startswith("exit-to-main-menu"):
         bot.clean_chat(chat_id)

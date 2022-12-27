@@ -42,13 +42,13 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
     def show_wordlist(self, chat_id, word_range: list):
         logger.debug(f"showing wordlist for '{chat_id}'")
         user = EnglishBotUser.get_user_by_chat_id(chat_id)
-        en_words = list(set([translate['en_word'] for translate in user.user_translations]))[word_range[0]:word_range[1]]
+        en_words = user.get_user_sorted_words()[word_range[0]:word_range[1]]
 
         cross_icon = u"\u274c"
 
         words_buttons = [InlineKeyboardButton(en_word, callback_data=f'word:{en_word}') for en_word in en_words]
-        cross_icon_buttons = [InlineKeyboardButton(cross_icon, callback_data=f'delete_word:{en_word}') for en_word in
-                              en_words]
+        cross_icon_buttons = [InlineKeyboardButton(cross_icon, callback_data=f'delete_word:{en_word}|{word_range}')
+                              for en_word in en_words]
 
         reply_markup = InlineKeyboardMarkup()
 
@@ -62,14 +62,14 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
     def show_word_ranges(self, chat_id):
         user = EnglishBotUser.get_user_by_chat_id(chat_id)
 
-        en_words = list(set([translate['en_word'] for translate in user.user_translations]))
+        en_words = user.get_user_sorted_words()
 
         # calculate words ranges to split the buttons
         divide_by = 20
         ranges = [[start, start + divide_by] for start in range(0, len(en_words), divide_by)]
         ranges[-1][1] -= (divide_by - len(en_words) % divide_by)
 
-        ranges_buttons = [InlineKeyboardButton(f"רשימת מילים {words_range[0]}-{words_range[1]}",
+        ranges_buttons = [InlineKeyboardButton(f" {en_words[words_range[0]][:1]}-{en_words[words_range[1] - 1][:1]} רשימת מילים ",
                                                callback_data=f'range_words:{words_range}') for words_range in ranges]
         reply_markup = InlineKeyboardMarkup()
         for button_index in range(len(ranges_buttons)):
@@ -152,7 +152,7 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
     def send_new_word(self, chat_id):
         user = EnglishBotUser.get_user_by_chat_id(chat_id)
 
-        en_words = list(set([trans['en_word'] for trans in user.user_translations]))
+        en_words = user.get_user_sorted_words()
         chosen_en_word = random.choice(en_words)
         en_words.remove(chosen_en_word)
 

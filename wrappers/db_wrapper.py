@@ -103,11 +103,15 @@ class DBWrapper:
 
         return self.execute_command(remove_row_command)
 
-    def get_all_values_by_field(self, table_name: str, field: str = None, condition_field=None, condition_value=None, first_item=False):
+    def get_all_values_by_field(self, table_name: str, field: str = None, condition_field=None, condition_value=None,
+                                first_item=False, order_by_field: str = None):
         get_all_values_by_field_command = f"SELECT {field if field else '*'} FROM {table_name}"
 
         if condition_field:
             get_all_values_by_field_command += f" WHERE {condition_field}='{condition_value}'"
+
+        if order_by_field:
+            get_all_values_by_field_command += f" ORDER BY {order_by_field}"
 
         result = self.execute_command(get_all_values_by_field_command)
 
