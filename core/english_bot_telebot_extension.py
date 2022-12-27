@@ -37,11 +37,11 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
 
         self.send_message(chat_id, "תפריט", reply_markup=reply_markup)
 
-    def show_wordlist(self, chat_id):
+    def show_wordlist(self, chat_id, word_range: list):
         logger.debug(f"showing wordlist for '{chat_id}'")
         user = EnglishBotUser.get_user_by_chat_id(chat_id)
+        en_words = list(set([translate['en_word'] for translate in user.user_translations]))[word_range[0]:word_range[1]]
 
-        en_words = list(set([translate['en_word'] for translate in user.user_translations]))
         cross_icon = u"\u274c"
 
         words_buttons = [InlineKeyboardButton(en_word, callback_data=f'word:{en_word}') for en_word in en_words]
@@ -53,9 +53,29 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
         for button_index in range(len(words_buttons)):
             reply_markup.row(words_buttons[button_index], cross_icon_buttons[button_index])
 
-        reply_markup.row(InlineKeyboardButton("חזרה לתפריט הראשי", callback_data=f'exit'))
+        reply_markup.row(InlineKeyboardButton("חזרה לתפריט הקודם", callback_data=f'exit-to-word-range'))
 
-        self.send_message(chat_id, "רשימת המילים שלך:", reply_markup=reply_markup)
+        self.send_message(chat_id, "רשימת המילים:", reply_markup=reply_markup)
+
+    def show_word_ranges(self, chat_id):
+        user = EnglishBotUser.get_user_by_chat_id(chat_id)
+
+        en_words = list(set([translate['en_word'] for translate in user.user_translations]))
+
+        # calculate words ranges to split the buttons
+        ranges = [[start, start + 25] for start in range(0, len(en_words), 25)]
+        ranges[-1][1] = ranges[-1][1] - (25 - len(en_words) % 25)
+
+        ranges_buttons = [InlineKeyboardButton(f"רשימת מילים {words_range[0]}-{words_range[1]}",
+                                               callback_data=f'range_words:{words_range}') for words_range in ranges]
+        reply_markup = InlineKeyboardMarkup()
+        for button_index in range(len(ranges_buttons)):
+            reply_markup.row(ranges_buttons[button_index])
+
+        reply_markup.row(InlineKeyboardButton("חזרה לתפריט הראשי", callback_data=f'exit-to-main-menu'))
+
+        logger.debug(f"showing words ranges for '{chat_id}'")
+        self.send_message(chat_id, "בחר באחת הרשימות:", reply_markup=reply_markup)
 
     def add_new_word_to_db(self, message):
         chat_id = message.chat.id
@@ -68,7 +88,7 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
 
         try:
             assert new_word
-            assert new_word.replace(' ','').isalpha()
+            assert new_word.replace(' ', '').isalpha()
             assert len(new_word) < 46
         except AssertionError:
             self.send_message(message.chat.id, 'המילה צריכה להכיל רק אותיות ולהיות לא יותר מ45 תווים')

@@ -50,8 +50,9 @@ def handle_query(call):
                     bot.send_message(chat_id, 'שליחת המילים האוטומטית הופסקה')
             elif button_id == '3':
                 bot.pause_user_word_sender(chat_id)
+                bot.clean_chat(chat_id)
 
-                bot.show_wordlist(chat_id)
+                bot.show_word_ranges(chat_id)
             elif button_id == '4':
                 bot.pause_user_word_sender(chat_id)
 
@@ -69,7 +70,7 @@ def handle_query(call):
         he_word, chosen_he_word = button_callback.split('|')
 
         bot.clean_chat(chat_id)
-        prefix = f'המילה הבאה תישלח בעוד {current_user.delay_time} דקות.'
+        prefix = f' המילה הבאה תישלח בעוד {current_user.delay_time} דקות.'
 
         if he_word == chosen_he_word:
             bot.send_message(chat_id, f'נכון, כל הכבוד.' + prefix)
@@ -81,17 +82,28 @@ def handle_query(call):
         bot.show_menu(chat_id)
         bot.resume_user_word_sender(chat_id)
 
+    elif data.startswith("range_words:"):
+        button_callback = data.replace('range_words:', '')
+
+        bot.clean_chat(chat_id)
+        bot.show_wordlist(chat_id, eval(button_callback))
+
     elif data.startswith("delete_word:"):
         button_callback = data.replace('delete_word:', '')
         bot.delete_word(chat_id, button_callback)
 
-        bot.show_wordlist(chat_id)
+        bot.show_menu(chat_id)
 
-    elif data.startswith("exit"):
+    elif data.startswith("exit-to-main-menu"):
         bot.clean_chat(chat_id)
 
         bot.show_menu(chat_id)
         bot.resume_user_word_sender(chat_id)
+
+    elif data.startswith("exit-to-word-range"):
+        bot.clean_chat(chat_id)
+
+        bot.show_word_ranges(chat_id)
 
 
 @bot.message_handler(commands=['start'])
