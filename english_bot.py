@@ -69,12 +69,14 @@ def handle_query(call):
         he_word, chosen_he_word = button_callback.split('|')
 
         bot.clean_chat(chat_id)
+        prefix = f'המילה הבאה תישלח בעוד {current_user.delay_time} דקות.'
+
         if he_word == chosen_he_word:
-            bot.send_message(chat_id, f'נכון, כל הכבוד. המילה הבאה תישלח בעוד {current_user.delay_time} דקות')
+            bot.send_message(chat_id, f'נכון, כל הכבוד.' + prefix)
             time.sleep(1)
         else:
-            bot.send_message(chat_id, f'טעות, התרגום הנכון זה - "{he_word}"')
-            time.sleep(5)
+            bot.send_message(chat_id, f'טעות, התרגום הנכון זה - "{he_word}"' + prefix)
+            time.sleep(1)
 
         bot.show_menu(chat_id)
         bot.resume_user_word_sender(chat_id)

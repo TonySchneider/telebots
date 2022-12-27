@@ -30,16 +30,16 @@ class EnglishBotUser:
 
     def new_words_worker(self):
         while True:
+            if self.word_sender.is_stopped:
+                logger.debug(f"The word sender of chat id '{self.chat_id}' was stopped")
+                break
+
             self.global_bot.send_new_word(self.chat_id)
 
             while self.word_sender_paused:
                 if self.word_sender.is_stopped:
                     break
                 time.sleep(1)
-
-            if self.word_sender.is_stopped:
-                logger.debug(f"The word sender of chat id '{self.chat_id}' was stopped")
-                break
 
             logger.debug(f"WordSender | Sleeping {self.delay_time} minutes")
             time.sleep(self.delay_time * 60)
