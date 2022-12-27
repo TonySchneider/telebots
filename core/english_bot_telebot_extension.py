@@ -12,6 +12,8 @@ logger = get_logger(__file__)
 
 
 class EnglishBotTelebotExtension(BaseTelebotExtension):
+    MIN_WORDS_PER_USER = 4
+    MAX_WORDS_PER_USER = 100
 
     def __init__(self, token: str):
         super(EnglishBotTelebotExtension, self).__init__(token)
@@ -22,7 +24,7 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
 
         menu_buttons = {
             '1': 'הוסף מילה חדשה',
-            '2': 'התחל/עצור שליחה אוטומטית',
+            '2': 'הפעל/עצור שליחה אוטומטית',
             '3': 'רשימת מילים ואפשרות מחיקה',
             '4': 'שנה זמן המתנה בין מילים',
             '5': 'עזרה'
@@ -63,8 +65,9 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
         en_words = list(set([translate['en_word'] for translate in user.user_translations]))
 
         # calculate words ranges to split the buttons
-        ranges = [[start, start + 25] for start in range(0, len(en_words), 25)]
-        ranges[-1][1] = ranges[-1][1] - (25 - len(en_words) % 25)
+        divide_by = 20
+        ranges = [[start, start + divide_by] for start in range(0, len(en_words), divide_by)]
+        ranges[-1][1] -= (divide_by - len(en_words) % divide_by)
 
         ranges_buttons = [InlineKeyboardButton(f"רשימת מילים {words_range[0]}-{words_range[1]}",
                                                callback_data=f'range_words:{words_range}') for words_range in ranges]

@@ -32,15 +32,21 @@ def handle_query(call):
         button_id = data.replace('menu:', '')
         if not current_user.is_locked():
             if button_id == '1':
-                bot.pause_user_word_sender(chat_id)
-                bot.clean_chat(chat_id)
+                if current_user.num_of_words >= bot.MAX_WORDS_PER_USER:
+                    bot.send_message(chat_id, 'הגעת לכמות מילים המקסימלית שניתן להוסיף (100 מילים).')
 
-                callback_msg = bot.send_message(chat_id, 'שלח את המילה החדשה')
-                bot.register_next_step_handler(callback_msg, bot.add_new_word_to_db)
+                    bot.clean_chat(chat_id)
+                    bot.show_menu(chat_id)
+                else:
+                    bot.pause_user_word_sender(chat_id)
+                    bot.clean_chat(chat_id)
+
+                    callback_msg = bot.send_message(chat_id, 'שלח את המילה החדשה')
+                    bot.register_next_step_handler(callback_msg, bot.add_new_word_to_db)
             elif button_id == '2':
                 current_sender_status = current_user.word_sender_active
                 if not current_sender_status:
-                    if current_user.num_of_words >= 4:
+                    if current_user.num_of_words >= bot.MIN_WORDS_PER_USER:
                         current_user.activate_word_sender()
                         bot.send_message(chat_id, 'שליחת המילים האוטומטית הופעלה')
                     else:
@@ -93,6 +99,7 @@ def handle_query(call):
         bot.delete_word(chat_id, button_callback)
 
         bot.show_menu(chat_id)
+        bot.resume_user_word_sender(chat_id)
 
     elif data.startswith("exit-to-main-menu"):
         bot.clean_chat(chat_id)
