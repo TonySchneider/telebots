@@ -11,9 +11,12 @@ from telethon.tl.patched import Message
 from telethon import TelegramClient, events, errors
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
+from wrappers.config_wrapper import ConfigWrapper
+
 logger = get_logger(__file__)
 
 DEV = False
+ALLOWED_CHAT_IDS_FILE_PATH = "configurations/allowed_chat_ids.yaml"
 
 try:
     TELEGRAM_API_ID = os.environ["TELEGRAM_API_ID"]
@@ -23,6 +26,8 @@ try:
     # MYSQL_PASS = os.environ["MYSQL_PASS"]
 
     TELEGRAM_API_ID = int(TELEGRAM_API_ID)
+
+    assert os.path.isfile(ALLOWED_CHAT_IDS_FILE_PATH)
 except KeyError:
     logger.error("Please set the environment variables: TELEGRAM_API_ID, TELEGRAM_API_HASH, ASHKELON_NEWS_BOT_TOKEN")
     sys.exit(1)
@@ -34,10 +39,14 @@ except AssertionError:
 bot = telebot.TeleBot(TOKEN)
 client = TelegramClient('session_name', TELEGRAM_API_ID, TELEGRAM_API_HASH)
 
+conf_obj = ConfigWrapper()
+chat_ids = conf_obj.get_config_file('allowed_chat_ids')
+ts_chat_id = chat_ids['tony']
+
 # initial variables
 producer_without_confirmation = [-1001436772127]
 producers = [-1001023468930, -1001337442223, -1001307152557, -1001143765178, -1001468698690, -1001406113886,
-             -1001436772127, -1001221122299, 239169883, -1001474443960]
+             -1001436772127, -1001221122299, ts_chat_id, -1001474443960]
 confirmation_group = -1001216509728
 test_group_id = -1001754623712
 prod_group_id = -1001489287278

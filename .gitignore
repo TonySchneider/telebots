@@ -133,3 +133,5 @@ chat_ids.txt
 
 # idea folder
 .idea
+
+configurations/allowed_chat_ids.yaml

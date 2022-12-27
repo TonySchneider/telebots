@@ -11,9 +11,10 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from helpers.loggers import get_logger
 from helpers.trenslations import translate_it
+from wrappers.config_wrapper import ConfigWrapper
 
 logger = get_logger(__file__)
-
+ALLOWED_CHAT_IDS_FILE_PATH = "configurations/allowed_chat_ids.yaml"
 
 try:
     TELEGRAM_API_ID = os.environ["TELEGRAM_API_ID"]
@@ -23,6 +24,8 @@ try:
     # MYSQL_PASS = os.environ["MYSQL_PASS"]
 
     TELEGRAM_API_ID = int(TELEGRAM_API_ID)
+
+    assert os.path.isfile(ALLOWED_CHAT_IDS_FILE_PATH)
 except KeyError:
     logger.error("Please set the environment variables: TELEGRAM_API_ID, TELEGRAM_API_HASH, ASHKELON_NEWS_BOT_TOKEN")
     sys.exit(1)
@@ -34,9 +37,11 @@ except AssertionError:
 # db_connector = DBWrapper(host='', mysql_user=MYSQL_USER, mysql_pass=MYSQL_PASS, database='english_bot')
 bot = telebot.TeleBot(TOKEN)
 client = TelegramClient('alerts', TELEGRAM_API_ID, TELEGRAM_API_HASH)
+conf_obj = ConfigWrapper()
+chat_ids = conf_obj.get_config_file('allowed_chat_ids')
 
 # initial variables
-ts_chat_id = 239169883
+ts_chat_id = chat_ids['tony']
 test_group_id = -1001216509728
 messages = {}
 

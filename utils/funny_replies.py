@@ -6,15 +6,20 @@ import time
 from telethon import TelegramClient, events, errors
 
 from helpers.loggers import get_logger
+from wrappers.config_wrapper import ConfigWrapper
 
 PROD = True
 logger = get_logger(__file__)
+ALLOWED_CHAT_IDS_FILE_PATH = "configurations/allowed_chat_ids.yaml"
+
 
 try:
     TELEGRAM_API_ID = os.environ["TELEGRAM_API_ID"]
     TELEGRAM_API_HASH = os.environ["TELEGRAM_API_HASH"]
 
     TELEGRAM_API_ID = int(TELEGRAM_API_ID)
+
+    assert os.path.isfile(ALLOWED_CHAT_IDS_FILE_PATH)
 except KeyError:
     logger.error("Please set the environment variables: MYSQL_USER, MYSQL_PASS, TONY_ENGLISH_BOT_TOKEN")
     sys.exit(1)
@@ -23,11 +28,12 @@ except AssertionError:
     sys.exit(1)
 
 client = TelegramClient('funny_replies' if PROD else 'dev_funny_replies', TELEGRAM_API_ID, TELEGRAM_API_HASH)
-
+conf_obj = ConfigWrapper()
+chat_ids = conf_obj.get_config_file('allowed_chat_ids')
 # initial variables
-ts_chat_id = 239169883
-boris_id = 475251416
-beni_id = 936405352
+ts_chat_id = chat_ids['tony']
+boris_id = chat_ids['boris']
+b_id = chat_ids['b']
 prod_group_id = -1001408213165
 test_group_id = -1001216509728
 messages = {}
@@ -42,7 +48,7 @@ async def my_event_handler(event):
     global messages
     message_text = event.message.text
 
-    conditioned_sender_id = [boris_id, beni_id] if PROD else [ts_chat_id]
+    conditioned_sender_id = [boris_id, b_id] if PROD else [ts_chat_id]
     message_to_send = None
 
     if event.message.sender_id in conditioned_sender_id and re.search(r'[י]+[א]+[ל]+[ה]+ אימו[ן]+', message_text):
@@ -59,16 +65,10 @@ async def my_event_handler(event):
         try:
             gif_file_name = event.message.media.document.attributes[1].file_name
             if gif_file_name in ['whyy-noo.mp4']:
-                message_to_send = "הגיע הזמן להחליף gif יא זן זין"
+                message_to_send = "הגיע הזמן להחליף gif"
         except Exception:
             logger.error("Didn't find the gif file name attribute")
             pass
-    # elif re.search(r'[י]+[א]+[ל]+[ה]+ שנ[ץ]+', message_text) or re.match(r'קק[י]+', message_text) or 'לילה טוב' in message_text \
-    #         or re.search(r'לילה דוב', message_text) or re.search(r'לילט', message_text) or re.search(r'ליל״ט', message_text):
-    #     message_to_send = "💤 GN"
-
-    # שנץ
-    # לילה טוב בוריאציות
 
     if message_to_send:
         logger.info(f'Found a message from {event.message.sender.username} | text="{message_text}"')
