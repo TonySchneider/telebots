@@ -33,7 +33,7 @@ class BaseTelebotExtension(TeleBot):
 
         msg_obj = None
         try:
-            msg_obj = super().send_message(chat_id, text, reply_markup=reply_markup)
+            msg_obj = super().send_message(chat_id, text, reply_markup=reply_markup, parse_mode=parse_mode)
         except ApiTelegramException as e:
             if any([error in e.__str__() for error in ['Bad Request: BUTTON_DATA_INVALID']]):
                 raise RuntimeError(e)

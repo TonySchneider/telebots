@@ -65,6 +65,11 @@ def handle_query(call):
                 callback_msg = bot.send_message(chat_id, 'שלח מספר דקות לשינוי זמן ההמתנה')
                 bot.register_next_step_handler(callback_msg, bot.change_waiting_time)
             elif button_id == '5':
+                bot.pause_user_word_sender(chat_id)
+                bot.clean_chat(chat_id)
+
+                bot.show_existing_words_to_practice(chat_id)
+            elif button_id == '6':
                 bot.send_message(chat_id, 'מה אתה צריך????!!')
         else:
             logger(f"The user trying to press on button {button_id} but the chat is locked")
@@ -179,7 +184,6 @@ if __name__ == '__main__':
             EnglishBotUser(chat_id=user['chat_id'],
                            word_sender_active=eval(user['auto_send_active']),
                            delay_time=user['delay_time'],
-                           num_of_words=user['num_of_words'],
                            user_translations=user_translations,
                            db_connector=db_connector,
                            global_bot=bot)

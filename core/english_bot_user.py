@@ -13,7 +13,7 @@ class EnglishBotUser:
     def get_user_by_chat_id(chat_id: int):
         return EnglishBotUser.active_users.get(chat_id)
 
-    def __init__(self, chat_id: int, db_connector, global_bot, word_sender_active: bool = False, delay_time: int = 20, num_of_words: int = 0,
+    def __init__(self, chat_id: int, db_connector, global_bot, word_sender_active: bool = False, delay_time: int = 20,
                  user_translations: list = None):
         self.chat_id = chat_id
         self.word_sender = None
@@ -21,15 +21,28 @@ class EnglishBotUser:
         self.word_sender_active = word_sender_active
         self.global_bot = global_bot
         self.delay_time = delay_time
-        self.num_of_words = num_of_words
-        self.user_translations = user_translations if user_translations else []
+        self.user_translations = self.convert_db_translation_into_a_dict(user_translations) if user_translations else {}
         self.db_connector = db_connector
         self.word_sender_paused = False
 
         EnglishBotUser.active_users[chat_id] = self
 
+    @property
+    def num_of_words(self):
+        return len(self.user_translations.keys())
+
+    @staticmethod
+    def convert_db_translation_into_a_dict(translations: list) -> dict:
+        trans_as_a_dict = {}
+        for translation in translations:
+            if translation['en_word'] in trans_as_a_dict.keys():
+                trans_as_a_dict[translation['en_word']].append(translation['he_word'])
+            else:
+                trans_as_a_dict[translation['en_word']] = [translation['he_word']]
+        return trans_as_a_dict
+
     def get_user_sorted_words(self):
-        return sorted(list(set([translate['en_word'] for translate in self.user_translations])))
+        return sorted(self.user_translations.keys())
 
     def new_words_worker(self):
         while True:
@@ -107,8 +120,7 @@ class EnglishBotUser:
                                                           second_value_condition=self.chat_id)
 
         if delete_status:
-            self.num_of_words -= 1
-            self.user_translations = [translate for translate in self.user_translations if translate['en_word'] != en_word]
+            self.user_translations.pop(en_word)
 
         return delete_status
 
@@ -127,8 +139,7 @@ class EnglishBotUser:
                                                                   keys_values=translations)
 
         if insertion_status:
-            self.user_translations += translations
-            self.num_of_words += 1
+            self.user_translations.update(self.convert_db_translation_into_a_dict(translations))
 
         return insertion_status
 

@@ -27,7 +27,8 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
             '2': 'הפעל/עצור שליחה אוטומטית',
             '3': 'רשימת מילים ואפשרות מחיקה',
             '4': 'שנה זמן המתנה בין מילים',
-            '5': 'עזרה'
+            '5': 'הצג רשימת מילים לשינון',
+            '6': 'עזרה'
         }
 
         reply_markup = InlineKeyboardMarkup()
@@ -58,6 +59,20 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
         reply_markup.row(InlineKeyboardButton("חזרה לתפריט הקודם", callback_data=f'exit-to-word-range'))
 
         self.send_message(chat_id, "רשימת המילים:", reply_markup=reply_markup)
+
+    def show_existing_words_to_practice(self, chat_id):
+        user_translations = EnglishBotUser.get_user_by_chat_id(chat_id).user_translations
+
+        table = "```\n"
+
+        for en_word, he_words in user_translations.items():
+            table += f"{en_word}" + " - " + f"{'/'.join(he_words)}\n"
+        table += "```\n"
+
+        reply_markup = InlineKeyboardMarkup()
+        reply_markup.row(InlineKeyboardButton("חזרה לתפריט הראשי", callback_data=f'exit-to-main-menu'))
+
+        self.send_message(chat_id, table, reply_markup=reply_markup, parse_mode='MarkdownV2')
 
     def show_word_ranges(self, chat_id):
         user = EnglishBotUser.get_user_by_chat_id(chat_id)
@@ -156,8 +171,7 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
         chosen_en_word = random.choice(en_words)
         en_words.remove(chosen_en_word)
 
-        chosen_he_word = random.choice(
-            [trans['he_word'] for trans in user.user_translations if trans['en_word'] == chosen_en_word])
+        chosen_he_word = random.choice(user.user_translations[chosen_en_word])
 
         additional_random_en_words = []
         while len(additional_random_en_words) < 3:
@@ -168,8 +182,7 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
         random_he_words = []
         while additional_random_en_words:
             current_en_word = additional_random_en_words.pop()
-            current_random_he_word = random.choice(
-                [trans['he_word'] for trans in user.user_translations if trans['en_word'] == current_en_word])
+            current_random_he_word = random.choice(user.user_translations[current_en_word])
             random_he_words.append(current_random_he_word)
 
         random_he_words.append(chosen_he_word)
