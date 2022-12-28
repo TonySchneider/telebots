@@ -167,7 +167,10 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
     def send_new_word(self, chat_id):
         user = EnglishBotUser.get_user_by_chat_id(chat_id)
 
+        # TODO: Generate list random elements by given priority
+
         en_words = user.get_user_sorted_words()
+
         chosen_en_word = random.choice(en_words)
         en_words.remove(chosen_en_word)
 

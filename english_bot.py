@@ -190,11 +190,11 @@ if __name__ == '__main__':
 
         bot.infinity_polling()
     except KeyboardInterrupt:
-        logger.info('Quitting... (CTRL+C pressed)\n Exits...')
-    except Exception:  # Catch-all for unexpected exceptions, with stack trace
-        logger.exception(f'Unhandled exception occurred!\n Aborting...')
+        print('Quitting... (CTRL+C pressed)\n Exits...')
+    except Exception as e:  # Catch-all for unexpected exceptions, with stack trace
+        print(f"Unhandled exception occurred!\n Error: '{e}'\nAborting...")
     finally:
-        logger.info('Existing...')
+        print('Existing...')
 
         bot.close()
         db_connector.close_connection()
