@@ -132,3 +132,14 @@ class DBWrapper:
             delete_row_by_field_command += f"AND {second_field_condition}='{second_value_condition}'"
 
         return self.execute_command(delete_row_by_field_command)
+
+    def update_multiple_rows(self, table_name: str, keys_values: dict):
+        update_multiple_rows_command = f"UPDATE {table_name} SET usages = CASE en_word"
+
+        for en_word, usages in keys_values.items():
+            update_multiple_rows_command += f" WHEN {en_word} THEN {usages}"
+
+        keys = "'" + "', '".join(keys_values.keys()) + "'"
+        update_multiple_rows_command += f" ELSE usages END WHERE en_word IN({keys});"
+
+        return self.execute_command(update_multiple_rows_command)

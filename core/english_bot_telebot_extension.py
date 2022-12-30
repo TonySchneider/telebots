@@ -61,12 +61,10 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
         self.send_message(chat_id, "רשימת המילים:", reply_markup=reply_markup)
 
     def show_existing_words_to_practice(self, chat_id):
-        user_translations = EnglishBotUser.get_user_by_chat_id(chat_id).user_translations
-
         table = "```\n"
 
-        for en_word, he_words in user_translations.items():
-            table += f"{en_word}" + " - " + f"{'/'.join(he_words)}\n"
+        for en_word, details in sorted(EnglishBotUser.get_user_by_chat_id(chat_id).user_translations.items()):
+            table += f"{en_word}" + " - " + f"{'/'.join(details['he_words'])}\n"
         table += "```\n"
 
         reply_markup = InlineKeyboardMarkup()
@@ -167,14 +165,12 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
     def send_new_word(self, chat_id):
         user = EnglishBotUser.get_user_by_chat_id(chat_id)
 
-        # TODO: Generate list random elements by given priority
+        en_words, priorities = user.get_sorted_words_and_their_priority()
 
-        en_words = user.get_user_sorted_words()
-
-        chosen_en_word = random.choice(en_words)
+        chosen_en_word = random.choices(en_words, weights=priorities, k=1)[0]
         en_words.remove(chosen_en_word)
 
-        chosen_he_word = random.choice(user.user_translations[chosen_en_word])
+        chosen_he_word = random.choice(user.user_translations[chosen_en_word]['he_words'])
 
         additional_random_en_words = []
         while len(additional_random_en_words) < 3:
@@ -185,7 +181,7 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
         random_he_words = []
         while additional_random_en_words:
             current_en_word = additional_random_en_words.pop()
-            current_random_he_word = random.choice(user.user_translations[current_en_word])
+            current_random_he_word = random.choice(user.user_translations[current_en_word]['he_words'])
             random_he_words.append(current_random_he_word)
 
         random_he_words.append(chosen_he_word)
@@ -201,8 +197,12 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
             reply_markup.row(option)
 
         self.clean_chat(chat_id)
+
         self.send_message(chat_id, f'בחר את התרגום של {chosen_en_word}', reply_markup=reply_markup)
         logger.debug(f"sent word '{chosen_en_word}' to chat id - '{chat_id}'")
+
+        # increase usage of the chosen word
+        user.increase_word_usages(chosen_en_word)
 
         self.pause_user_word_sender(chat_id)
 

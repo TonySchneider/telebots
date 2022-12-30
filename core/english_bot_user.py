@@ -36,22 +36,52 @@ class EnglishBotUser:
         trans_as_a_dict = {}
         for translation in translations:
             if translation['en_word'] in trans_as_a_dict.keys():
-                trans_as_a_dict[translation['en_word']].append(translation['he_word'])
+                trans_as_a_dict[translation['en_word']]['he_words'].append(translation['he_word'])
             else:
-                trans_as_a_dict[translation['en_word']] = [translation['he_word']]
+                trans_as_a_dict[translation['en_word']] = {
+                    'he_words': [translation['he_word']],
+                    'usages': 0
+                }
         return trans_as_a_dict
+
+    def increase_word_usages(self, en_word: str):
+        self.user_translations[en_word]['usages'] += 1
+        logger.debug(f"Increased the number of usages of the word - '{en_word}'."
+                     f" The current value is {self.user_translations[en_word]['usages']}.")
+
+    def get_sorted_words_and_their_priority(self) -> tuple:
+        sorted_words = []
+        priorities = []
+        for word, details in sorted(self.user_translations.items()):
+            sorted_words.append(word)
+            priorities.append(details['usages'])
+
+        priorities = [1.0 / (priority + 1) for priority in priorities]
+        return sorted_words, priorities
 
     def get_user_sorted_words(self):
         return sorted(self.user_translations.keys())
 
     def new_words_worker(self):
+        got_exception = 0
+
         while True:
             if self.word_sender.is_stopped:
                 logger.debug(f"The word sender of chat id '{self.chat_id}' was stopped")
                 break
 
-            self.global_bot.send_new_word(self.chat_id)
+            try:
+                self.global_bot.send_new_word(self.chat_id)
+            # TODO: change this exception to something better
+            except Exception as e:
+                logger.debug(f"Got exception - {e}")
+                if got_exception >= 3:
+                    raise Exception(e)
 
+                got_exception += 1
+                continue
+
+            got_exception = 0
             while self.word_sender_paused:
                 if self.word_sender.is_stopped:
                     break
@@ -135,14 +165,22 @@ class EnglishBotUser:
         return update_status
 
     def update_translations(self, translations) -> bool:
-        insertion_status = self.db_connector.insert_multiple_rows(table_name='translations',
-                                                                  keys_values=translations)
+        translations_insertion_status = self.db_connector.insert_multiple_rows(table_name='translations',
+                                                                               keys_values=translations)
 
-        if insertion_status:
+        usages_insertion_status = self.db_connector.insert_row(table_name='usages',
+                                                               keys_values={'en_word': translations[0]['en_word']})
+
+        if translations_insertion_status and usages_insertion_status:
             self.user_translations.update(self.convert_db_translation_into_a_dict(translations))
 
-        return insertion_status
+        return translations_insertion_status and usages_insertion_status
 
     def close(self):
         if self.word_sender:
             self.word_sender.stop()
+
+        # logger.debug(f"Updating usages table for user - '{self.chat_id}'...")
+        # self.db_connector.update_multiple_rows(table_name='usages',
+        #                                        keys_values={en_word: details['usages']
+        #                                                     for en_word, details in self.user_translations.items()})
