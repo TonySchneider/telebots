@@ -72,6 +72,18 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
 
         self.send_message(chat_id, table, reply_markup=reply_markup, parse_mode='MarkdownV2')
 
+    def show_existing_words_with_their_priorities(self, chat_id):
+        table = "```\n"
+
+        for en_word, details in sorted(EnglishBotUser.get_user_by_chat_id(chat_id).user_translations.items()):
+            table += f"{en_word}" + " - " + f"{details['usages']}\n"
+        table += "```\n"
+
+        reply_markup = InlineKeyboardMarkup()
+        reply_markup.row(InlineKeyboardButton("חזרה לתפריט הראשי", callback_data=f'exit-to-main-menu'))
+
+        self.send_message(chat_id, table, reply_markup=reply_markup, parse_mode='MarkdownV2')
+
     def show_word_ranges(self, chat_id):
         user = EnglishBotUser.get_user_by_chat_id(chat_id)
 

@@ -136,6 +136,19 @@ def start_the_bot(message):
         bot.send_message(chat_id, 'אנא הוסף לפחות 4 מילים על מנת שהמערכת תוכל להתחיל לשלוח מילים בצורה אוטומטית')
 
 
+@bot.message_handler(func=lambda message: message.text in ['שלח-עדיפויות', '/priorities'])
+def new_word_command(message):
+    chat_id = message.chat.id
+    current_user: "EnglishBotUser" = EnglishBotUser.get_user_by_chat_id(chat_id)
+
+    if current_user:
+        current_user.messages.append(message.message_id)
+
+    if not current_user.is_locked():
+        bot.clean_chat(chat_id)
+        bot.show_existing_words_with_their_priorities(chat_id)
+
+
 @bot.message_handler(func=lambda message: message.text in ['שלח-מילה', '/send'])
 def new_word_command(message):
     chat_id = message.chat.id
