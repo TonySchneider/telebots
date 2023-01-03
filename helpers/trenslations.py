@@ -44,10 +44,9 @@ def get_translations(word):
     return list(set(return_in_hebrew_list))
 
 
-if __name__ == '__main__':
-    # print(get_translations('corresponds'))
+# if __name__ == '__main__':
+#     print(get_translations(''))
 
-    sentence = """
-**🛑 الشهيد المجاهد احمد دراغمة ابن مدينة طوباس والذي ارتقى اثناء تصديه لقوات الاحتلال المتوغلة بقبر يوسف في نابلس..
-    """
-    print(translate_it(sentence, lang_from='ar', lang_to='he'))
+    # sentence = """
+#     """
+#     print(translate_it(sentence, lang_from='ar', lang_to='he'))
