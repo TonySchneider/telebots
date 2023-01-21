@@ -52,7 +52,7 @@ class DBWrapper:
         self.mysql_connector.close()
 
     @ExceptionDecorator(exceptions=[Exception])
-    @retry(exceptions=Exception, tries=3, delay=2, jitter=2)
+    @retry(exceptions=Exception, tries=3, delay=2)
     def execute_command(self, command: str):
         output = True
         self.create_connection()

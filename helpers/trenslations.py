@@ -25,7 +25,7 @@ def get_translations(word):
 
     all_translations = trans_obj.extra_data.get('all-translations')
     if not all_translations:
-        return [trans_obj.text] if hasattr(trans_obj, 'text') else None
+        return [trans_obj.text] if hasattr(trans_obj, 'text') and trans_obj.text.lower() != word else None
 
     return_in_hebrew_list = []
 
@@ -45,7 +45,7 @@ def get_translations(word):
 
 
 # if __name__ == '__main__':
-#     print(get_translations(''))
+#     print(get_translations('despair'))
 
     # sentence = """
 #     """
