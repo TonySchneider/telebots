@@ -33,10 +33,8 @@ def handle_query(call):
         if not current_user.is_locked():
             if button_id == '1':
                 if current_user.num_of_words >= bot.MAX_WORDS_PER_USER:
-                    bot.send_message(chat_id, 'הגעת לכמות מילים המקסימלית שניתן להוסיף (100 מילים).')
-
                     bot.clean_chat(chat_id)
-                    bot.show_menu(chat_id)
+                    bot.send_message(chat_id, 'הגעת לכמות מילים המקסימלית שניתן להוסיף (100 מילים).')
                 else:
                     bot.pause_user_word_sender(chat_id)
                     bot.clean_chat(chat_id)
@@ -90,7 +88,6 @@ def handle_query(call):
             bot.send_message(chat_id, f'טעות, התרגום הנכון זה - "{he_word}."' + prefix)
             time.sleep(1)
 
-        bot.show_menu(chat_id)
         bot.resume_user_word_sender(chat_id)
 
     elif data.startswith("range_words:"):
@@ -170,7 +167,8 @@ def new_word_command(message):
         current_user.messages.append(message.message_id)
 
     if not current_user.is_locked():
-        bot.show_menu(message.chat.id)
+        bot.clean_chat(chat_id)
+        bot.show_menu(chat_id)
 
 
 @bot.message_handler(func=lambda message: message.text)

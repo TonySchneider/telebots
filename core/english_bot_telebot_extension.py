@@ -143,7 +143,6 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
         else:
             self.send_message(chat_id, 'המערכת לא הצליחה להוסיף את המילה המבוקשת, שאל את המפתחים')
 
-        self.show_menu(chat_id)
         self.resume_user_word_sender(chat_id)
 
     def change_waiting_time(self, message):
@@ -172,7 +171,6 @@ class EnglishBotTelebotExtension(BaseTelebotExtension):
                 f"There was an assertion error. Error - '{e}'. | method - 'change_waiting_time' | message.text - '{new_time}'")
         finally:
             self.resume_user_word_sender(chat_id)
-            self.show_menu(chat_id)
 
     def send_new_word(self, chat_id):
         user = EnglishBotUser.get_user_by_chat_id(chat_id)
