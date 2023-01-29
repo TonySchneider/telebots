@@ -14,7 +14,7 @@ from helpers.trenslations import translate_it
 from wrappers.config_wrapper import ConfigWrapper
 
 logger = get_logger(__file__)
-ALLOWED_CHAT_IDS_FILE_PATH = "configurations/allowed_chat_ids.yaml"
+ALLOWED_CHAT_IDS_FILE_PATH = "../configurations/allowed_chat_ids.yaml"
 
 try:
     TELEGRAM_API_ID = os.environ["TELEGRAM_API_ID"]
@@ -42,7 +42,6 @@ chat_ids = conf_obj.get_config_file('allowed_chat_ids')
 
 # initial variables
 ts_chat_id = chat_ids['tony']
-test_group_id = -1001216509728
 messages = {}
 
 
@@ -51,6 +50,7 @@ def send_a_message_via_bot(chat_id: Union[int, str], message_object: Union[Messa
     """
     This method sends message via bot to the provided chat id
     """
+    logger.debug(f"handling message by uuid - '{accept_message_id}'... (inside the send_a_message_via_bot)")
     global messages
 
     if isinstance(message_object, Message):
@@ -96,7 +96,7 @@ async def my_event_handler(event):
             message_id = uuid.uuid4().__str__()
             media_path = None
 
-            logger.debug(f'sending message to {test_group_id}')
+            logger.debug(f'sending message to {ts_chat_id}')
 
             logger.debug(f"Will translate message by id - '{message_id}'")
             translated_text = translate_it(text=event.message.text, lang_from="ar", lang_to="he")

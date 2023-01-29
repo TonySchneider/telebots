@@ -7,16 +7,14 @@ from helpers.loggers import get_logger
 logger = get_logger(__file__)
 
 
-@retry(exceptions=(TypeError, AttributeError), tries=5, delay=5, jitter=3)
+@retry(exceptions=(TypeError, AttributeError), tries=5, delay=3, jitter=2)
 def translate_it(text: str, lang_from: str, lang_to: str):
-    translated_text = None
-
     translator = Translator()
     trans_obj = translator.translate(text=text,
                                      src=lang_from,
                                      dest=lang_to)
-    translated_text = trans_obj.text
-    return translated_text
+
+    return trans_obj.text if trans_obj and hasattr(trans_obj, 'text') else None
 
 
 def get_translations(word):
