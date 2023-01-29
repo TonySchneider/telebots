@@ -14,7 +14,7 @@ from helpers.trenslations import translate_it
 from wrappers.config_wrapper import ConfigWrapper
 
 logger = get_logger(__file__)
-ALLOWED_CHAT_IDS_FILE_PATH = "../configurations/allowed_chat_ids.yaml"
+ALLOWED_CHAT_IDS_FILE_PATH = "configurations/allowed_chat_ids.yaml"
 
 try:
     TELEGRAM_API_ID = os.environ["TELEGRAM_API_ID"]
