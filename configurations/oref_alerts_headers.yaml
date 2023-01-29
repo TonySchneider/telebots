@@ -1,14 +1,14 @@
-Accept: text/plain, */*; q=0.01
-Accept-Encoding: gzip, deflate, br
-Accept-Language: en-US,en;q=0.9
-Connection: keep-alive
-Content-Type: application/x-www-form-urlencoded; charset=UTF-8
-Cookie: ASP.NET_SessionId=4wwmgb5yd2yx2ba5adu1savy; pakar_sound_unmute=0; __atuvc=1%7C19; __atuvs=609fe50c46ded0ed000; _hjTLDTest=1; _hjid=59268757-72f8-4f2b-aa81-cd26b9b18e4a; _hjFirstSeen=1; _ga=GA1.3.49327735.1621091599; _gid=GA1.3.11939948.1621091599; _hjIncludedInPageviewSample=1; _hjAbsoluteSessionInProgress=0; _fbp=fb.2.1621091599831.770295106; zdSessionId_07713213=daf5cdcf-c389-462d-ac41-24c861b50997; 07713213-ehtoken=SharedAccessSignature sr=http%3A%2F%2Fprod-sb-appanalytics-us1.servicebus.windows.net%2F&sig=z%2F0SheDPUl4E1WXiMslXsrk0RgmyYGVe1WNEmIASnf0%3D&se=1621093872&skn=all; TS013a1194=010f83961d1bdc7b88dc84992844773dd5df3cd690457adb48555f6357108ef7465cdf4f89961a42f3a964e37d1d50dea6bea515c0337de6a365f637ffe35ac05fbeb10aca; pakar_last_warning_id=1621092636339; Lastalerts=[];
-Host: www.oref.org.il
-Referer: https://www.oref.org.il//12481-he/Pakar.aspx?hash=12482
-sec-ch-ua-mobile: ?0
-Sec-Fetch-Dest: empty
-Sec-Fetch-Mode: cors
-Sec-Fetch-Site: same-origin
-User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36
-X-Requested-With: XMLHttpRequest
+Accept: "text/plain, */*; q=0.01"
+Accept-Encoding: "gzip, deflate, br"
+Accept-Language: "en-US,en;q=0.9"
+Connection: "keep-alive"
+Content-Type: "application/x-www-form-urlencoded; charset=UTF-8"
+Cookie: "ASP.NET_SessionId=4wwmgb5yd2yx2ba5adu1savy; pakar_sound_unmute=0; __atuvc=1%7C19; __atuvs=609fe50c46ded0ed000; _hjTLDTest=1; _hjid=59268757-72f8-4f2b-aa81-cd26b9b18e4a; _hjFirstSeen=1; _ga=GA1.3.49327735.1621091599; _gid=GA1.3.11939948.1621091599; _hjIncludedInPageviewSample=1; _hjAbsoluteSessionInProgress=0; _fbp=fb.2.1621091599831.770295106; zdSessionId_07713213=daf5cdcf-c389-462d-ac41-24c861b50997; 07713213-ehtoken=SharedAccessSignature sr=http%3A%2F%2Fprod-sb-appanalytics-us1.servicebus.windows.net%2F&sig=z%2F0SheDPUl4E1WXiMslXsrk0RgmyYGVe1WNEmIASnf0%3D&se=1621093872&skn=all; TS013a1194=010f83961d1bdc7b88dc84992844773dd5df3cd690457adb48555f6357108ef7465cdf4f89961a42f3a964e37d1d50dea6bea515c0337de6a365f637ffe35ac05fbeb10aca; pakar_last_warning_id=1621092636339; Lastalerts=[];"
+Host: "www.oref.org.il"
+Referer: "https://www.oref.org.il//12481-he/Pakar.aspx?hash=12482"
+sec-ch-ua-mobile: "?0"
+Sec-Fetch-Dest: "empty"
+Sec-Fetch-Mode: "cors"
+Sec-Fetch-Site: "same-origin"
+User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36"
+X-Requested-With: "XMLHttpRequest"

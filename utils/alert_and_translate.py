@@ -46,7 +46,8 @@ test_group_id = -1001216509728
 messages = {}
 
 
-def send_a_message_via_bot(chat_id: Union[int, str], message_object: Union[Message, str], accept_message_id=None, media_path=None, text=None, reply_markup=None):
+def send_a_message_via_bot(chat_id: Union[int, str], message_object: Union[Message, str], accept_message_id=None,
+                           media_path=None, text=None, reply_markup=None):
     """
     This method sends message via bot to the provided chat id
     """
@@ -55,10 +56,14 @@ def send_a_message_via_bot(chat_id: Union[int, str], message_object: Union[Messa
     if isinstance(message_object, Message):
         if media_path and media_path.endswith('.mp4'):
             logger.info(f"Sending video to chat_id:{chat_id}")
-            sending_status = bot.send_video(chat_id, video=open(media_path, 'rb'), caption=text if text else message_object.text, reply_markup=reply_markup)
+            with open(media_path, 'rb') as video:
+                sending_status = bot.send_video(chat_id, video=video,
+                                                caption=text if text else message_object.text, reply_markup=reply_markup)
         elif media_path and media_path.endswith('.jpg'):
             logger.info(f"Sending photo to chat_id:{chat_id}")
-            sending_status = bot.send_photo(chat_id, photo=open(media_path, 'rb'), caption=text if text else message_object.text, reply_markup=reply_markup)
+            with open(media_path, 'rb') as photo:
+                sending_status = bot.send_photo(chat_id, photo=photo,
+                                                caption=text if text else message_object.text, reply_markup=reply_markup)
         else:
             logger.info(f"Sending text message to chat_id:{chat_id}")
             sending_status = bot.send_message(chat_id, text if text else message_object.text, reply_markup=reply_markup)
