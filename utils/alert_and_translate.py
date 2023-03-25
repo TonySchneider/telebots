@@ -7,7 +7,6 @@ from typing import Union
 from threading import Thread
 from telethon.tl.patched import Message
 from telethon import TelegramClient, events, errors
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from helpers.loggers import get_logger
 from helpers.trenslations import translate_it
@@ -20,8 +19,6 @@ try:
     TELEGRAM_API_ID = os.environ["TELEGRAM_API_ID"]
     TELEGRAM_API_HASH = os.environ["TELEGRAM_API_HASH"]
     TOKEN = os.environ["ASHKELON_NEWS_BOT_TOKEN"]
-    # MYSQL_USER = os.environ["MYSQL_USER"]
-    # MYSQL_PASS = os.environ["MYSQL_PASS"]
 
     TELEGRAM_API_ID = int(TELEGRAM_API_ID)
 
@@ -34,7 +31,6 @@ except AssertionError:
     sys.exit(1)
 
 # initial objects
-# db_connector = DBWrapper(host='', mysql_user=MYSQL_USER, mysql_pass=MYSQL_PASS, database='english_bot')
 bot = telebot.TeleBot(TOKEN)
 client = TelegramClient('alerts', TELEGRAM_API_ID, TELEGRAM_API_HASH)
 conf_obj = ConfigWrapper()
@@ -42,6 +38,7 @@ chat_ids = conf_obj.get_config_file('allowed_chat_ids')
 
 # initial variables
 ts_chat_id = chat_ids['tony']
+alert_channels = chat_ids['alert_channels']
 messages = {}
 
 
@@ -77,7 +74,6 @@ def send_a_message_via_bot(chat_id: Union[int, str], message_object: Union[Messa
             os.remove(media_path)
         messages.pop(accept_message_id)
 
-        # bot.delete_message(confirmation_group, message_object.id)
     return sending_status
 
 
@@ -85,7 +81,7 @@ async def send_me_a_message(message_text: str):
     await client.send_message('me', message=message_text)
 
 
-@client.on(events.NewMessage(chats=(-1001493954148, -1001238669963, -1001318165547)))
+@client.on(events.NewMessage(chats=alert_channels))
 async def my_event_handler(event):
     global messages
 
@@ -121,8 +117,6 @@ async def my_event_handler(event):
                                    accept_message_id=message_id,
                                    media_path=messages[message_id].get('media_path'),
                                    text=translated_text)
-            # send_a_message_via_bot(ts_chat_id, translated_text)
-            # accept_new_report(event.message.text)
             sent = True
         except errors.rpcerrorlist.FloodWaitError:
             print('exception, sleeping 5 seconds...')
@@ -144,5 +138,4 @@ if __name__ == '__main__':
     finally:
         client.disconnect()
         bot.close()
-        # db_connector.close_connection()
         sys.exit(0)
